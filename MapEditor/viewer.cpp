@@ -31,12 +31,12 @@ SchematicViewer::SchematicViewer(const SchematicMap& sm, int w, int h)
 	sf::ContextSettings settings;
 	settings.antiAliasingLevel = 16;
 	window.create(sf::VideoMode({ static_cast<unsigned int>(windowWidth), static_cast<unsigned int>(windowHeight) }),
-		"Schematic Viewer — GPU Shadows",
+		"Schematic Viewer",
 		sf::State::Windowed,
 		settings);
 	window.setFramerateLimit(60);
 
-	if (!font.openFromFile("arial.ttf")) {
+	if (!font.openFromFile("Benbow Regular.ttf")) {
 		if (!font.openFromFile("C:/Windows/Fonts/arial.ttf")) {}
 	}
 

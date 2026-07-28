@@ -195,7 +195,7 @@ void Menu::showLoadDialog() {
 
 void Menu::showInfoDialog() {
     // Создаём временное окно с информацией
-    sf::RenderWindow infoWindow(sf::VideoMode({ 400, 200 }), "О программе");
+    sf::RenderWindow infoWindow(sf::VideoMode({ 400, 200 }), L"О программе");
     sf::Font fnt;
     fnt.openFromFile("Benbow Regular.ttf"); // или тот же шрифт
     sf::Text info(fnt,
