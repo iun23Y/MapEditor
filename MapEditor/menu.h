@@ -42,6 +42,6 @@ private:
     } settings;
 
     // Константы версий
-    const std::wstring PROGRAM_VERSION = L"1.0.0";
+    const std::wstring PROGRAM_VERSION = L"1.0.1";
     const std::wstring MC_VERSION = L"1.21.4";
 };
