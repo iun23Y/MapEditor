@@ -11,21 +11,6 @@
 #include <commdlg.h>
 #endif
 
-std::string ansi_to_utf8(const std::string& ansi) {
-    if (ansi.empty()) return "";
-    // Определяем размер буфера для широких символов
-    int wlen = MultiByteToWideChar(1251, 0, ansi.c_str(), -1, nullptr, 0);
-    if (wlen == 0) return ansi; // ошибка преобразования
-    std::vector<wchar_t> wbuf(wlen);
-    MultiByteToWideChar(1251, 0, ansi.c_str(), -1, wbuf.data(), wlen);
-    // Преобразуем широкие символы в UTF-8
-    int utf8len = WideCharToMultiByte(CP_UTF8, 0, wbuf.data(), -1, nullptr, 0, nullptr, nullptr);
-    if (utf8len == 0) return ansi;
-    std::vector<char> utf8buf(utf8len);
-    WideCharToMultiByte(CP_UTF8, 0, wbuf.data(), -1, utf8buf.data(), utf8len, nullptr, nullptr);
-    return std::string(utf8buf.data(), utf8len - 1); // удаляем завершающий ноль
-}
-
 Menu::Menu(int width, int height)
     : window(sf::VideoMode({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }),
         L"Schematic Viewer – Меню",
@@ -166,7 +151,7 @@ void Menu::showLoadDialog() {
         settings.lastSchematicPath = path;
         saveSettings();
         try {
-            SchematicMap schem = loadSchematic(path);
+            SchematicMap schem(path);
             SchematicViewer viewer(schem, window.getSize().x, window.getSize().y);
             viewer.run();
         }

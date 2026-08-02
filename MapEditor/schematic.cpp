@@ -264,17 +264,6 @@ std::unordered_map<std::string, sf::Color> blockColors = {
 
 } // namespace
 
-SchematicMap::SchematicMap(int w, int h, int l,
-    const std::unordered_map<int, std::string>& pal,
-    std::vector<std::vector<int>>&& tBlocks,
-    std::vector<std::vector<int>>&& tHeights)
-    : width(w), height(h), length(l), palette(pal),
-      topBlocks(std::move(tBlocks)), topHeights(std::move(tHeights)) {
-    for (const auto& [id, name] : palette) {
-        nameToId[name] = id;
-    }
-}
-
 std::vector<uint8_t> gzipDecompress(const std::vector<uint8_t>& compressed) {
     z_stream strm{};
     strm.zalloc = Z_NULL;
@@ -344,9 +333,9 @@ sf::Color getBlockColor(int blockId, const std::unordered_map<int, std::string>&
     return sf::Color(200, 200, 200);
 }
 
-SchematicMap loadSchematic(const std::string& filename) {
+SchematicMap::SchematicMap(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary);
-    if (!file) throw std::runtime_error("Cannot open file: " + filename);
+    //if (!file) throw std::runtime_error("Cannot open file: " + filename);
     std::vector<uint8_t> fileData((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
 
@@ -361,7 +350,7 @@ SchematicMap loadSchematic(const std::string& filename) {
     NBTReader reader(nbtData);
     auto rootTag = reader.readTag();
     if (!rootTag || rootTag->type != TagType::TAG_COMPOUND) {
-        throw std::runtime_error("Root tag is not a compound");
+        //throw std::runtime_error("Root tag is not a compound");
     }
     auto root = std::dynamic_pointer_cast<TagCompound>(rootTag);
 
@@ -380,10 +369,10 @@ SchematicMap loadSchematic(const std::string& filename) {
         return 0;
     };
 
-    int width = getNumeric("Width");
-    int height = getNumeric("Height");
-    int length = getNumeric("Length");
-    if (width == 0 || height == 0 || length == 0) throw std::runtime_error("Missing dimensions");
+    width = getNumeric("Width");
+    height = getNumeric("Height");
+    length = getNumeric("Length");
+    //if (width == 0 || height == 0 || length == 0) throw std::runtime_error("Missing dimensions");
 
     std::shared_ptr<TagCompound> blocksTag;
     auto itBlocks = schemTag->children.find("Blocks");
@@ -396,11 +385,10 @@ SchematicMap loadSchematic(const std::string& filename) {
             blocksTag = std::dynamic_pointer_cast<TagCompound>(itRootBlocks->second);
         }
         else {
-            throw std::runtime_error("Blocks compound not found");
+            //throw std::runtime_error("Blocks compound not found");
         }
     }
 
-    std::unordered_map<int, std::string> palette;
     auto itPal = blocksTag->children.find("Palette");
     if (itPal != blocksTag->children.end() && itPal->second->type == TagType::TAG_COMPOUND) {
         auto palTag = std::dynamic_pointer_cast<TagCompound>(itPal->second);
@@ -408,6 +396,7 @@ SchematicMap loadSchematic(const std::string& filename) {
             if (child->type == TagType::TAG_INT) {
                 int id = std::dynamic_pointer_cast<TagInt>(child)->value;
                 palette[id] = name;
+                nameToId[name] = id;
             }
         }
     }
@@ -423,36 +412,47 @@ SchematicMap loadSchematic(const std::string& filename) {
             rawData = std::dynamic_pointer_cast<TagByteArray>(itBlockData->second)->value;
         }
         else {
-            throw std::runtime_error("Data not found");
+            //throw std::runtime_error("Data not found");
         }
     }
+
+    std::vector<int> Offset;
+    auto itOffset = schemTag->children.find("Offset");
+    if (itOffset != schemTag->children.end() && itOffset->second->type == TagType::TAG_INT_ARRAY) {
+        Offset = std::dynamic_pointer_cast<TagIntArray>(itOffset->second)->value;
+    }
+    else {
+        auto itOffset = schemTag->children.find("Offset");
+        if (itOffset != schemTag->children.end() && itOffset->second->type == TagType::TAG_INT_ARRAY) {
+            Offset = std::dynamic_pointer_cast<TagIntArray>(itOffset->second)->value;
+        }
+        else {
+            //throw std::runtime_error("Data not found");
+        }
+    }
+    offsetX = Offset[0];
+    offsetY = Offset[1];
+    offsetZ = Offset[2];
 
     int volume = width * height * length;
     auto indices = decodeBlockIndices(rawData, volume);
 
     std::unordered_set<int> ignoreIds;
     for (const auto& [id, blockName] : palette) {
-        if (blockName == "minecraft:air" || blockName == "___reserved___") {
+        if (blockName == "minecraft:air" || blockName == "___reserved___" || blockName == "void") {
             ignoreIds.insert(id);
         }
     }
 
-    std::vector<std::vector<int>> topBlocks(width, std::vector<int>(length, -1));
-    std::vector<std::vector<int>> topHeights(width, std::vector<int>(length, -1));
-
-    for (int x = 0; x < width; ++x) {
-        for (int z = 0; z < length; ++z) {
-            for (int y = height - 1; y >= 0; --y) {
+    for (int x = 0; x < width; x++) {
+        for (int z = 0; z < length; z++) {
+            for (int y = 0; y < height; y++) {
                 int idx = (y * length + z) * width + x;
                 int bid = indices[idx];
                 if (ignoreIds.find(bid) == ignoreIds.end()) {
-                    topBlocks[x][z] = bid;
-                    topHeights[x][z] = y;
-                    break;
+                    blocks[{x + Offset[0], y + Offset[1], z + Offset[2]}] = bid;
                 }
             }
         }
     }
-
-    return SchematicMap(width, height, length, palette, std::move(topBlocks), std::move(topHeights));
 }
