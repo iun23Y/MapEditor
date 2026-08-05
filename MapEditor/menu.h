@@ -4,6 +4,10 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <future>
+#include <memory>
+
+class SchematicMap;
 
 class Menu {
 public:
@@ -11,7 +15,7 @@ public:
     void run();
 
 private:
-    // Структура кнопки
+    // Button structure
     struct Button {
         sf::FloatRect rect;
         std::wstring label;
@@ -26,14 +30,16 @@ private:
     void draw();
     void loadSettings();
     void saveSettings() const;
-    void showLoadDialog();   // вызов диалога выбора файла (Windows)
-    void showInfoDialog();   // окно с версией
+    void showLoadDialog();   // file open dialog (Windows)
+    void showInfoDialog();   // version info window
+    void startLoad(const std::string& path);
+    void processLoad();
 
     sf::RenderWindow window;
     sf::Font font;
     std::vector<Button> buttons;
 
-    // Настройки
+    // Settings
     struct Settings {
         std::string lastSchematicPath = "";
         float shadowStrength = 0.35f;
@@ -41,7 +47,12 @@ private:
         sf::Color backgroundColor = sf::Color(30, 30, 30);
     } settings;
 
-    // Константы версий
+    // Version constants
     const std::wstring PROGRAM_VERSION = L"1.0.1";
     const std::wstring MC_VERSION = L"1.21.4";
+
+    bool isLoading = false;
+    std::future<std::unique_ptr<SchematicMap>> loadFuture;
+    std::unique_ptr<SchematicMap> loadedSchematic;
+    std::string loadingMessage;
 };
