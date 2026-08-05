@@ -1,5 +1,24 @@
 ﻿#include "Menu.h"
 #include <iostream>
+#include "schematic.h"
+
+class Redactor {
+private:
+    sf::View redactorView;
+    sf::View uiView;
+
+	sf::RenderWindow window;
+	SchematicMap map;
+public:
+    void updateUI() {
+		window.setView(uiView);
+
+
+
+		window.setView(redactorView);
+    }
+};
+
 
 int runApplication() {
     try {
@@ -8,7 +27,7 @@ int runApplication() {
         return 0;
     }
     catch (const std::exception& e) {
-        std::cerr << "Ошибка: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
 }

@@ -1,11 +1,12 @@
-#include "Menu.h"
+п»ї#include "Menu.h"
 #include "schematic.h"
-#include "viewer.h"
+#include "redactor.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
-// Для диалога выбора файла под Windows
+// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ Windows
 #ifdef _WIN32
 #include <windows.h>
 #include <commdlg.h>
@@ -13,20 +14,19 @@
 
 Menu::Menu(int width, int height)
     : window(sf::VideoMode({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }),
-        L"Schematic Viewer – Меню",
+        L"Schematic Viewer - Menu",
         sf::Style::Default) {
     window.setFramerateLimit(60);
     loadSettings();
 
-    // Загружаем шрифт (можно использовать системный или встроенный)
-    if (!font.openFromFile("Benbow Regular.ttf")) {
+    // Load font or fallback
+    if (!font.openFromFile("")) {
         if (!font.openFromFile("C:/Windows/Fonts/consola.ttf")) {
-            // Если шрифт не найден, создаём заглушку
-            font = sf::Font(); // будет использован стандартный (если есть)
+            font = sf::Font();
         }
     }
 
-    // Определяем кнопки
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     float centerX = static_cast<float>(width) / 2.f;
     float yStart = 100.f;
     float buttonWidth = 250.f;
@@ -39,11 +39,10 @@ Menu::Menu(int width, int height)
         yStart += buttonHeight + spacing;
         };
 
-    addButton(L"Загрузить схему", [this]() { showLoadDialog(); });
-    addButton(L"Настройки", [this]() {
-        // Здесь можно открыть отдельное окно настроек (упрощённо – меняем параметры в консоли)
-        std::cout << "Настройки (пока изменяются через консоль):\n";
-        std::cout << "Введите новую силу теней (0.0-1.0): ";
+    addButton(L"Load schematic", [this]() { showLoadDialog(); });
+    addButton(L"~Settings~", [this]() {
+        std::cout << "Settings (enter shadow strength 0.0-1.0):\n";
+        std::cout << "Shadow strength: ";
         float val;
         std::cin >> val;
         if (val >= 0 && val <= 1) {
@@ -51,8 +50,8 @@ Menu::Menu(int width, int height)
             saveSettings();
         }
         });
-    addButton(L"О программе", [this]() { showInfoDialog(); });
-    addButton(L"Выход", [this]() { window.close(); });
+    addButton(L"About", [this]() { showInfoDialog(); });
+    addButton(L"Exit", [this]() { window.close(); });
 }
 
 void Menu::run() {
@@ -90,7 +89,7 @@ void Menu::handleEvents() {
         }
 
         if (const auto* resized = event->getIf<sf::Event::Resized>()) {
-            // Обновляем размер окна и вид
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ
             window.setView(sf::View(sf::FloatRect({ 0,0 }, { static_cast<float>(resized->size.x),
                                                           static_cast<float>(resized->size.y) })));
         }
@@ -98,19 +97,18 @@ void Menu::handleEvents() {
 }
 
 void Menu::update() {
-    // Обновление состояния (пока пусто)
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)
 }
 
 void Menu::draw() {
     window.clear(settings.backgroundColor);
 
-    // Заголовок
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     sf::Text title(font, "Schematic Viewer", 40);
     title.setFillColor(sf::Color::White);
     title.setPosition({ static_cast<float>(window.getSize().x) / 2.f - title.getLocalBounds().size.x / 2.f, 20.f });
     window.draw(title);
 
-    // Кнопки
     for (auto& btn : buttons) {
         sf::RectangleShape shape(btn.rect.size);
         shape.setPosition(btn.rect.position);
@@ -125,8 +123,8 @@ void Menu::draw() {
         window.draw(text);
     }
 
-    // Версия внизу
-    sf::Text version(font, L"Версия программы: " + PROGRAM_VERSION + L"  |  Версия игры: " + MC_VERSION, 14);
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+    sf::Text version(font, L"Version: " + PROGRAM_VERSION + L"  |  Minecraft: " + MC_VERSION, 14);
     version.setFillColor(sf::Color(180, 180, 180));
     version.setPosition({ 10, static_cast<float>(window.getSize().y) - 30 });
     window.draw(version);
@@ -150,19 +148,45 @@ void Menu::showLoadDialog() {
         std::string path(fileName);
         settings.lastSchematicPath = path;
         saveSettings();
+        startLoad(path);
+
+        while (window.isOpen() && isLoading) {
+            handleEvents();
+            window.clear(settings.backgroundColor);
+
+            sf::Text status(font, L"Loading schematic...", 24);
+            status.setFillColor(sf::Color::White);
+            status.setPosition({ 40.f, static_cast<float>(window.getSize().y) / 2.f - 20.f });
+            window.draw(status);
+            window.display();
+
+            processLoad();
+            sf::sleep(sf::milliseconds(16));
+        }
+
+        if (!loadedSchematic) {
+            if (!loadingMessage.empty())
+                std::cerr << "Failed to load schematic: " << loadingMessage << std::endl;
+            return;
+        }
+
+        int currentWidth = window.getSize().x;
+        int currentHeight = window.getSize().y;
+        window.close();
+
         try {
-            SchematicMap schem(path);
-            SchematicViewer viewer(schem, window.getSize().x, window.getSize().y);
-            viewer.run();
+            Redactor redactor(std::move(loadedSchematic), currentWidth, currentHeight);
+            redactor.run();
         }
         catch (const std::exception& e) {
-            std::cerr << "Ошибка загрузки схемы: " << e.what() << std::endl;
-            // Можно показать сообщение в окне, но оставим консоль
+            std::cerr << "Editor display error: " << e.what() << std::endl;
         }
+
+        loadedSchematic.reset();
     }
 #else
-    // Для Linux/macOS можно использовать zenity или ввод в консоли
-    std::cout << "Введите полный путь к схеме: ";
+    // пїЅпїЅпїЅ Linux/macOS пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ zenity пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    std::cout << "Enter path to schematic file: ";
     std::string path;
     std::cin >> path;
     if (!path.empty()) {
@@ -172,23 +196,26 @@ void Menu::showLoadDialog() {
             viewer.run();
         }
         catch (const std::exception& e) {
-            std::cerr << "Ошибка: " << e.what() << std::endl;
+            std::cerr << "пїЅпїЅпїЅпїЅпїЅпїЅ: " << e.what() << std::endl;
         }
     }
 #endif
 }
 
 void Menu::showInfoDialog() {
-    // Создаём временное окно с информацией
-    sf::RenderWindow infoWindow(sf::VideoMode({ 400, 200 }), L"О программе");
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    sf::RenderWindow infoWindow(sf::VideoMode({ 400, 200 }), L"About");
     sf::Font fnt;
-    fnt.openFromFile("Benbow Regular.ttf"); // или тот же шрифт
+    bool loaded = fnt.openFromFile("Benbow Regular.ttf");
+    if (!loaded) {
+        loaded = fnt.openFromFile("C:/Windows/Fonts/arial.ttf");
+    }
     sf::Text info(fnt,
-        L"Программа: Schematic Viewer\n"
-        L"Версия: " + PROGRAM_VERSION + "\n"
-        L"Minecraft версия: " + MC_VERSION + "\n"
-        L"Автор: Ilia31050211\n\n"
-        L"Нажмите ESC для закрытия", 18);
+        L"Name: Schematic Viewer\n"
+        L"Version: " + PROGRAM_VERSION + L"\n"
+        L"Minecraft version: " + MC_VERSION + L"\n"
+        L"Author: Ilia31050211\n\n"
+        L"Press ESC to close", 18);
     info.setFillColor(sf::Color::White);
     info.setPosition({ 20, 20 });
 
@@ -216,10 +243,34 @@ void Menu::loadSettings() {
                 if (key == "lastPath") settings.lastSchematicPath = value;
                 else if (key == "shadowStrength") settings.shadowStrength = std::stof(value);
                 else if (key == "initialZoom") settings.initialZoom = std::stof(value);
-                // можно добавить цвет
+                // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
             }
         }
         file.close();
+    }
+}
+
+void Menu::startLoad(const std::string& path) {
+    isLoading = true;
+    loadingMessage.clear();
+    loadFuture = std::async(std::launch::async, [path]() {
+        return std::make_unique<SchematicMap>(path);
+    });
+}
+
+void Menu::processLoad() {
+    if (!isLoading) return;
+    if (loadFuture.valid()) {
+        auto status = loadFuture.wait_for(std::chrono::milliseconds(0));
+        if (status == std::future_status::ready) {
+            try {
+                loadedSchematic = loadFuture.get();
+            }
+            catch (const std::exception& e) {
+                loadingMessage = e.what();
+            }
+            isLoading = false;
+        }
     }
 }
 
