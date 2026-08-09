@@ -12,6 +12,16 @@
 #include <commdlg.h>
 #endif
 
+static std::string getExeDirectory()
+{
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    std::string path(buffer);
+    size_t last = path.find_last_of("\\/");
+    if (last != std::string::npos) path = path.substr(0, last + 1);
+    return path;
+}
+
 Menu::Menu(int width, int height)
     : window(sf::VideoMode({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }),
         L"Schematic Viewer - Menu",
@@ -253,8 +263,9 @@ void Menu::loadSettings() {
 void Menu::startLoad(const std::string& path) {
     isLoading = true;
     loadingMessage.clear();
-    loadFuture = std::async(std::launch::async, [path]() {
-        return std::make_unique<SchematicMap>(path);
+    std::string exeDir = getExeDirectory();
+    loadFuture = std::async(std::launch::async, [path, exeDir]() {
+        return std::make_unique<SchematicMap>(path, exeDir + "world");
     });
 }
 
