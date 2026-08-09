@@ -1,6 +1,7 @@
 #pragma once
 
 #include "schematic.h"
+#include "tileMap.h"
 
 #include <SFML/Graphics.hpp>
 #include <future>
@@ -61,7 +62,6 @@ private:
     void startBuildTextures();
     void pollBuildTextures();
     void updateView();
-    void updateSprites();
     void initUI();
     void handleEvent();
     void handleUIEvent(const sf::Vector2f& mouse);
@@ -100,10 +100,13 @@ private:
     std::unique_ptr<sf::Text> statusText;
     std::unique_ptr<sf::Text> infoText;
     sf::Font font;
+    std::unordered_map<std::string, sf::Texture> textureCache;
+    bool needRebuildViewTexture = false;
     std::vector<UIButton> topButtons;
     std::vector<UIButton> fileMenuButtons;
     std::vector<UIButton> rightButtons;
     std::wstring statusMessage;
+    std::optional<TileMap> tileMap; // зум 12
 
     static const sf::Color UI_PANEL_BACKGROUND;
     static const sf::Color UI_PANEL_BORDER;

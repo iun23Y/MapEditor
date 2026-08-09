@@ -14,6 +14,9 @@
 #include <string>
 #include <unordered_map>
 #include <windows.h>
+#include <shlobj.h>
+#include <shellapi.h>
+#pragma comment(lib, "shell32.lib")
 
 const sf::Color Redactor::UI_PANEL_BACKGROUND = sf::Color(40, 40, 40, 220);
 const sf::Color Redactor::UI_PANEL_BORDER = sf::Color(220, 220, 220, 180);
@@ -39,6 +42,7 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
         (void)font.openFromFile("C:/Windows/Fonts/arial.ttf");
     }
 
+    tileMap.emplace(0, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
     redactorView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(static_cast<float>(width), static_cast<float>(height))));
     uiView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(static_cast<float>(width), static_cast<float>(height))));
     viewCenter = { 0.f, 0.f };
@@ -187,6 +191,7 @@ void Redactor::handleEvent() {
                 viewCenter = dragCenter + delta / zoom;
                 updateView();
             }
+            tileMap->update(redactorView);
             return;
         }
 
@@ -212,7 +217,7 @@ void Redactor::handleEvent() {
 
         if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>()) {
             float factor = (wheel->delta > 0) ? 1.2f : 1.0f / 1.2f;
-            zoom = std::clamp(zoom * factor, 0.25f, 16.f);
+            zoom = std::clamp(zoom * factor, 0.0f, 16.0f);
             updateView();
             return;
         }
@@ -249,6 +254,7 @@ void Redactor::updateView() {
     float halfWidth = static_cast<float>(windowWidth) / 2.f / zoom;
     float halfHeight = static_cast<float>(windowHeight) / 2.f / zoom;
     redactorView = sf::View(sf::FloatRect({ viewCenter.x - halfWidth, viewCenter.y - halfHeight }, { halfWidth * 2.f, halfHeight * 2.f }));
+    needRebuildViewTexture = true;
 }
 
 void Redactor::drawButton(const UIButton& button) {
@@ -269,22 +275,29 @@ void Redactor::draw() {
     window.clear(MAP_BACKGROUND_COLOR);
 
     window.setView(redactorView);
-    if (renderSprite) {
-        if (shadowShader && sf::Shader::isAvailable()) {
-            shadowShader->setUniform("blockTexture", blockColorTexture);
-            shadowShader->setUniform("heightTexture", heightTexture);
-            shadowShader->setUniform("maxHeight", maxHeight);
-            shadowShader->setUniform("shadowStrength", 0.35f);
-            shadowShader->setUniform("blockPixelSize", 16.f);
-            shadowShader->setUniform("maxDiff", 3.0f);
-            shadowShader->setUniform("zoom", zoom);
-            shadowShader->setUniform("textureThreshold", 0.6f);
-            window.draw(*renderSprite, sf::RenderStates(shadowShader.get()));
-        }
-        else {
-            window.draw(*renderSprite);
+
+    // If map is ready, render only the visible area into small temporary render targets.
+    if (buildReady) {
+        
+
+        if (renderSprite) {
+            if (shadowShader && sf::Shader::isAvailable()) {
+                shadowShader->setUniform("blockTexture", blockColorTexture);
+                shadowShader->setUniform("heightTexture", heightTexture);
+                shadowShader->setUniform("maxHeight", maxHeight);
+                shadowShader->setUniform("shadowStrength", 0.35f);
+                shadowShader->setUniform("blockPixelSize", 1.f);
+                shadowShader->setUniform("maxDiff", 3.0f);
+                shadowShader->setUniform("zoom", zoom);
+                shadowShader->setUniform("textureThreshold", 0.6f);
+                window.draw(*renderSprite, sf::RenderStates(shadowShader.get()));
+            }
+            else {
+                window.draw(*renderSprite);
+            }
         }
     }
+    window.draw(tileMap.value());
 
     window.setView(uiView);
 
@@ -366,8 +379,8 @@ Redactor::BuildResult Redactor::buildTexturesImages() {
         throw std::runtime_error("Invalid schematic dimensions");
     result.width = w;
     result.length = l;
-    sf::Image blockImage({ static_cast<unsigned int>(w * 16), static_cast<unsigned int>(l * 16) }, sf::Color(0, 0, 0, 0));
-    sf::Image heightImage({ static_cast<unsigned int>(w * 16), static_cast<unsigned int>(l * 16) }, sf::Color::Black);
+    sf::Image blockImage({ static_cast<unsigned int>(w * 1), static_cast<unsigned int>(l * 1) }, sf::Color(0, 0, 0, 0));
+    sf::Image heightImage({ static_cast<unsigned int>(w * 1), static_cast<unsigned int>(l * 1) }, sf::Color::Black);
     for (int y = Pos1.y; y < Pos2.y; ++y) {
         for (int rx = (Pos1.x >= 0 ? Pos1.x / 1000 : (Pos1.x - 999) / 1000) * 1000;
              rx <= ((Pos2.x - 1) >= 0 ? (Pos2.x - 1) / 1000 : ((Pos2.x - 1) - 999) / 1000) * 1000;
@@ -403,12 +416,12 @@ Redactor::BuildResult Redactor::buildTexturesImages() {
             if (hb == result.topHeights.end() || bb == result.topBlocks.end()) continue;
             int h = hb->second;
             sf::Image* texImg = getBlockTexture(bb->second);
-            for (int py = 0; py < 16; ++py) {
-                for (int px = 0; px < 16; ++px) {
+            for (int py = 0; py < 1; ++py) {
+                for (int px = 0; px < 1; ++px) {
                     sf::Color pixel = texImg ? texImg->getPixel({ static_cast<unsigned int>(px), static_cast<unsigned int>(py) }) : schem->getBlockColor(bb->second);
                     if (!texImg) pixel.a = 255;
-                    unsigned int imgX = static_cast<unsigned int>(lx * 16 + px);
-                    unsigned int imgY = static_cast<unsigned int>(lz * 16 + py);
+                    unsigned int imgX = static_cast<unsigned int>(lx * 1 + px);
+                    unsigned int imgY = static_cast<unsigned int>(lz * 1 + py);
                     blockImage.setPixel({ imgX, imgY }, pixel);
                     float normH = static_cast<float>(h) / result.maxHeight;
                     uint8_t heightValue = static_cast<uint8_t>(std::clamp(normH * 255.f, 0.f, 255.f));
@@ -423,18 +436,16 @@ Redactor::BuildResult Redactor::buildTexturesImages() {
 }
 
 void Redactor::applyBuildResult(BuildResult&& result) {
+	heightTexture.loadFromImage(result.heightImage);
+    blockColorTexture.loadFromImage(result.blockImage);
     buildWidth = result.width;
     buildLength = result.length;
     maxHeight = std::max(result.maxHeight, 1.0f);
     topBlocks = std::move(result.topBlocks);
     topHeights = std::move(result.topHeights);
-    if (!blockColorTexture.loadFromImage(result.blockImage))
-        throw std::runtime_error("Failed to load block texture");
-    if (!heightTexture.loadFromImage(result.heightImage))
-        throw std::runtime_error("Failed to load height texture");
-    if (!renderSprite) renderSprite.emplace(blockColorTexture);
-    else renderSprite->setTexture(blockColorTexture, true);
-    updateView();
+    renderSprite = std::optional<sf::Sprite>(blockColorTexture);
+    // Invalidate any previously rendered view texture — it will be generated on demand
+    
     buildReady = true;
     statusMessage = L"Map ready";
 }
@@ -476,7 +487,8 @@ void Redactor::showLoadDialog() {
     ofn.nFilterIndex = 1;
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
     if (GetOpenFileNameA(&ofn)) {
-        // TODO: implement loading in redactor later
+        schem->loadFromFile(fileName);
+        applyBuildResult(buildTexturesImages());
     }
 #endif
 }
@@ -484,6 +496,7 @@ void Redactor::showLoadDialog() {
 void Redactor::showSaveDialog() {
     // TODO: add schematic export/save
 }
+
 
 void Redactor::setStatusText(const std::wstring& text) {
     statusMessage = text;
