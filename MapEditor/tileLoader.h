@@ -1,10 +1,11 @@
+п»ї// tileLoader.h
 #pragma once
 
 #ifndef CPPHTTPLIB_OPENSSL_SUPPORT
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #endif
-#include <httplib.h>
 
+#include <httplib.h>
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <iostream>
@@ -14,38 +15,205 @@
 #include <unordered_map>
 #include <mutex>
 #include <random>
+#include <future>
+#include <vector>
+#include <curl/curl.h>
+#include <algorithm>
 
 enum class TileSource {
-    OSM,
+    OSM_Standard,
+    OSM_Hot,
+    OSM_Transport,
     Google,
+    Google_Satellite,
+    Google_Terrain,
     Yandex,
     Custom
 };
 
 class TileLoader {
 private:
-    std::unordered_map<std::string, sf::Texture> m_textureCache;
+    struct CachedTexture {
+        sf::Texture texture;
+        std::chrono::steady_clock::time_point lastUsed;
+        std::string url;
+    };
+
+    std::unordered_map<std::string, CachedTexture> m_textureCache;
     mutable std::mutex m_cacheMutex;
     static constexpr size_t MAX_CACHE_SIZE = 500;
 
-    TileSource m_source = TileSource::OSM;
+    TileSource m_source = TileSource::OSM_Standard;
     std::string m_customUrl;
 
-    // Построение URL для разных источников (без поддоменов для OSM)
+    std::vector<std::string> osmSubdomains = { "a", "b", "c" };
+    std::vector<std::string> googleSubdomains = { "mt0", "mt1", "mt2", "mt3" };
+    std::mt19937 rng{ std::random_device{}() };
+
+    // РСЃРїРѕР»СЊР·СѓРµРј inline static - C++17
+    inline static bool curlInitialized = false;
+
+    // РЎС‚СЂСѓРєС‚СѓСЂР° РґР»СЏ РѕС‚РІРµС‚Р°
+    struct MemoryStruct {
+        char* memory;
+        size_t size;
+    };
+
+    // Callback РґР»СЏ cURL
+    static size_t WriteMemoryCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+        size_t realsize = size * nmemb;
+        MemoryStruct* mem = (MemoryStruct*)userp;
+
+        char* ptr = (char*)realloc(mem->memory, mem->size + realsize + 1);
+        if (!ptr) {
+            std::cerr << "[FAIL] Not enough memory for cURL response" << std::endl;
+            return 0;
+        }
+
+        mem->memory = ptr;
+        memcpy(&(mem->memory[mem->size]), contents, realsize);
+        mem->size += realsize;
+        mem->memory[mem->size] = 0;
+
+        return realsize;
+    }
+
+    // Р—Р°РіСЂСѓР·РєР° С‡РµСЂРµР· cURL
+    std::vector<uint8_t> downloadWithCurl(const std::string& url) {
+        if (!curlInitialized) {
+            curl_global_init(CURL_GLOBAL_DEFAULT);
+            curlInitialized = true;
+        }
+
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            std::cerr << "[FAIL] Failed to initialize cURL" << std::endl;
+            return {};
+        }
+
+        MemoryStruct chunk;
+        chunk.memory = (char*)malloc(1);
+        chunk.size = 0;
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&chunk);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "gzip, deflate, br");
+
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Accept: image/webp,image/png,image/*,*/*;q=0.8");
+        headers = curl_slist_append(headers, "Accept-Language: en-US,en;q=0.9");
+        headers = curl_slist_append(headers, "Cache-Control: no-cache");
+        headers = curl_slist_append(headers, "Connection: keep-alive");
+        headers = curl_slist_append(headers, "Referer: https://www.openstreetmap.org/");
+
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        CURLcode res = curl_easy_perform(curl);
+
+        std::vector<uint8_t> result;
+        if (res == CURLE_OK) {
+            long response_code;
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+            if (response_code == 200) {
+                result.assign(chunk.memory, chunk.memory + chunk.size);
+                std::cout << "[OK] Loaded: " << url << std::endl;
+            }
+            else {
+                std::cerr << "[FAIL] HTTP error " << response_code << ": " << url << std::endl;
+            }
+        }
+        else {
+            std::cerr << "[FAIL] cURL error: " << curl_easy_strerror(res) << " - " << url << std::endl;
+        }
+
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+        free(chunk.memory);
+
+        return result;
+    }
+
+    // РЎРѕР·РґР°РЅРёРµ С‚РµРєСЃС‚СѓСЂС‹ РёР· РґР°РЅРЅС‹С…
+    sf::Texture createTextureFromData(const std::vector<uint8_t>& data) {
+        sf::Texture texture;
+        if (data.empty()) return texture;
+
+        if (texture.loadFromMemory(data.data(), data.size())) {
+            return texture;
+        }
+
+        sf::Image image;
+        if (image.loadFromMemory(data.data(), data.size())) {
+            texture.loadFromImage(image);
+            return texture;
+        }
+
+        return texture;
+    }
+
+    static std::string replaceAll(const std::string& str, const std::string& from, const std::string& to) {
+        std::string result = str;
+        size_t pos = 0;
+        while ((pos = result.find(from, pos)) != std::string::npos) {
+            result.replace(pos, from.length(), to);
+            pos += to.length();
+        }
+        return result;
+    }
+
     std::string buildTileUrl(int z, int x, int y) {
         std::string url;
 
         switch (m_source) {
-        case TileSource::OSM: {
-            // Используем основной домен без поддоменов
-            url = "https://tile.openstreetmap.org/" +
+        case TileSource::OSM_Standard: {
+            std::uniform_int_distribution<int> dist(0, static_cast<int>(osmSubdomains.size()) - 1);
+            std::string subdomain = osmSubdomains[dist(rng)];
+            url = "https://" + subdomain + ".tile.openstreetmap.org/" +
+                std::to_string(z) + "/" + std::to_string(x) + "/" +
+                std::to_string(y) + ".png";
+            break;
+        }
+        case TileSource::OSM_Hot: {
+            url = "https://tile-a.openstreetmap.fr/hot/" +
+                std::to_string(z) + "/" + std::to_string(x) + "/" +
+                std::to_string(y) + ".png";
+            break;
+        }
+        case TileSource::OSM_Transport: {
+            url = "https://tile.memomaps.de/tilegen/" +
                 std::to_string(z) + "/" + std::to_string(x) + "/" +
                 std::to_string(y) + ".png";
             break;
         }
         case TileSource::Google: {
-            // Используем статический поддомен для Google
-            url = "https://mt0.google.com/vt/lyrs=m&x=" +
+            std::uniform_int_distribution<int> dist(0, static_cast<int>(googleSubdomains.size()) - 1);
+            std::string subdomain = googleSubdomains[dist(rng)];
+            url = "https://" + subdomain + ".google.com/vt/lyrs=m&x=" +
+                std::to_string(x) + "&y=" + std::to_string(y) + "&z=" +
+                std::to_string(z);
+            break;
+        }
+        case TileSource::Google_Satellite: {
+            std::uniform_int_distribution<int> dist(0, static_cast<int>(googleSubdomains.size()) - 1);
+            std::string subdomain = googleSubdomains[dist(rng)];
+            url = "https://" + subdomain + ".google.com/vt/lyrs=s&x=" +
+                std::to_string(x) + "&y=" + std::to_string(y) + "&z=" +
+                std::to_string(z);
+            break;
+        }
+        case TileSource::Google_Terrain: {
+            std::uniform_int_distribution<int> dist(0, static_cast<int>(googleSubdomains.size()) - 1);
+            std::string subdomain = googleSubdomains[dist(rng)];
+            url = "https://" + subdomain + ".google.com/vt/lyrs=t&x=" +
                 std::to_string(x) + "&y=" + std::to_string(y) + "&z=" +
                 std::to_string(z);
             break;
@@ -58,35 +226,52 @@ private:
         }
         case TileSource::Custom: {
             url = m_customUrl;
-            // Заменяем шаблоны
-            size_t pos;
-            while ((pos = url.find("{z}")) != std::string::npos)
-                url.replace(pos, 3, std::to_string(z));
-            while ((pos = url.find("{x}")) != std::string::npos)
-                url.replace(pos, 3, std::to_string(x));
-            while ((pos = url.find("{y}")) != std::string::npos)
-                url.replace(pos, 3, std::to_string(y));
+            url = replaceAll(url, "{z}", std::to_string(z));
+            url = replaceAll(url, "{x}", std::to_string(x));
+            url = replaceAll(url, "{y}", std::to_string(y));
             break;
         }
         }
 
-        std::cout << "Loading tile: " << url << std::endl;
         return url;
     }
 
-    // Версия для const методов
     std::string buildTileUrlConst(int z, int x, int y) const {
         std::string url;
 
         switch (m_source) {
-        case TileSource::OSM: {
+        case TileSource::OSM_Standard: {
             url = "https://tile.openstreetmap.org/" +
+                std::to_string(z) + "/" + std::to_string(x) + "/" +
+                std::to_string(y) + ".png";
+            break;
+        }
+        case TileSource::OSM_Hot: {
+            url = "https://tile-a.openstreetmap.fr/hot/" +
+                std::to_string(z) + "/" + std::to_string(x) + "/" +
+                std::to_string(y) + ".png";
+            break;
+        }
+        case TileSource::OSM_Transport: {
+            url = "https://tile.memomaps.de/tilegen/" +
                 std::to_string(z) + "/" + std::to_string(x) + "/" +
                 std::to_string(y) + ".png";
             break;
         }
         case TileSource::Google: {
             url = "https://mt0.google.com/vt/lyrs=m&x=" +
+                std::to_string(x) + "&y=" + std::to_string(y) + "&z=" +
+                std::to_string(z);
+            break;
+        }
+        case TileSource::Google_Satellite: {
+            url = "https://mt0.google.com/vt/lyrs=s&x=" +
+                std::to_string(x) + "&y=" + std::to_string(y) + "&z=" +
+                std::to_string(z);
+            break;
+        }
+        case TileSource::Google_Terrain: {
+            url = "https://mt0.google.com/vt/lyrs=t&x=" +
                 std::to_string(x) + "&y=" + std::to_string(y) + "&z=" +
                 std::to_string(z);
             break;
@@ -99,9 +284,9 @@ private:
         }
         case TileSource::Custom: {
             url = m_customUrl;
-            url = std::regex_replace(url, std::regex("\\{z\\}"), std::to_string(z));
-            url = std::regex_replace(url, std::regex("\\{x\\}"), std::to_string(x));
-            url = std::regex_replace(url, std::regex("\\{y\\}"), std::to_string(y));
+            url = replaceAll(url, "{z}", std::to_string(z));
+            url = replaceAll(url, "{x}", std::to_string(x));
+            url = replaceAll(url, "{y}", std::to_string(y));
             break;
         }
         }
@@ -109,102 +294,40 @@ private:
         return url;
     }
 
-    // Простая загрузка с обработкой редиректов
-    sf::Texture downloadTile(const std::string& url) {
-        // Парсим URL
-        std::string fullUrl = url;
-        std::string protocol = "https://";
-        std::string host, path;
+    void cleanCache() {
+        if (m_textureCache.size() <= MAX_CACHE_SIZE / 2) return;
 
-        if (fullUrl.find("https://") == 0) {
-            fullUrl = fullUrl.substr(8);
-        }
-        else if (fullUrl.find("http://") == 0) {
-            fullUrl = fullUrl.substr(7);
-            protocol = "http://";
+        std::vector<std::pair<std::string, std::chrono::steady_clock::time_point>> items;
+        for (const auto& pair : m_textureCache) {
+            items.push_back({ pair.first, pair.second.lastUsed });
         }
 
-        size_t pos = fullUrl.find("/");
-        if (pos != std::string::npos) {
-            host = fullUrl.substr(0, pos);
-            path = fullUrl.substr(pos);
-        }
-        else {
-            host = fullUrl;
-            path = "/";
-        }
-
-        // Создаем клиент
-        httplib::Client client(host);
-        client.set_default_headers({
-            {"User-Agent", "MapEditor/1.0 (your_email@example.com)"}
+        std::sort(items.begin(), items.end(),
+            [](const auto& a, const auto& b) {
+                return a.second < b.second;
             });
-        client.set_connection_timeout(5, 0);
-        client.set_read_timeout(10, 0);
-        client.enable_server_certificate_verification(false);
 
-        // Пробуем загрузить
-        const int MAX_RETRIES = 3;
-        for (int attempt = 0; attempt < MAX_RETRIES; ++attempt) {
-            auto response = client.Get(path);
-
-            if (response) {
-                if (response->status == 200) {
-                    sf::Texture texture;
-                    if (texture.loadFromMemory(response->body.data(), response->body.size())) {
-                        std::cout << "Successfully loaded: " << url << std::endl;
-                        return texture;
-                    }
-                    else {
-                        std::cerr << "Failed to decode image: " << url << std::endl;
-                        return sf::Texture();
-                    }
-                }
-                else if (response->status == 301 || response->status == 302) {
-                    // Попробуем следовать редиректу вручную
-                    auto locationIt = response->headers.find("Location");
-                    if (locationIt != response->headers.end()) {
-                        std::string newUrl = locationIt->second;
-                        std::cout << "Redirect to: " << newUrl << std::endl;
-
-                        // Если редирект на тот же URL, прекращаем
-                        if (newUrl == url) {
-                            std::cerr << "Redirect loop detected" << std::endl;
-                            return sf::Texture();
-                        }
-
-                        // Рекурсивно загружаем новый URL
-                        return downloadTile(newUrl);
-                    }
-                }
-                else if (response->status == 429 || response->status == 503) {
-                    std::cerr << "Rate limited, retrying... (attempt " << attempt + 1 << ")" << std::endl;
-                    std::this_thread::sleep_for(std::chrono::seconds(1 << attempt));
-                    continue;
-                }
-                else {
-                    std::cerr << "HTTP error " << response->status << ": " << url << std::endl;
-                    return sf::Texture();
-                }
-            }
-            else {
-                std::cerr << "No response (attempt " << attempt + 1 << "): " << url << std::endl;
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
+        size_t toRemove = items.size() - MAX_CACHE_SIZE / 2;
+        for (size_t i = 0; i < toRemove && i < items.size(); ++i) {
+            m_textureCache.erase(items[i].first);
         }
-
-        std::cerr << "Failed to load after " << MAX_RETRIES << " attempts: " << url << std::endl;
-        return sf::Texture();
     }
 
 public:
     TileLoader() {
-        // Инициализация
+        if (!curlInitialized) {
+            curl_global_init(CURL_GLOBAL_DEFAULT);
+            curlInitialized = true;
+        }
+        std::cout << "[OK] TileLoader initialized" << std::endl;
     }
+
+    ~TileLoader() = default;
 
     void setSource(TileSource source) {
         m_source = source;
         clearCache();
+        std::cout << "Source changed to: " << static_cast<int>(source) << std::endl;
     }
 
     void setCustomUrl(const std::string& url) {
@@ -218,54 +341,104 @@ public:
     }
 
     sf::Texture loadTile(int z, int x, int y) {
-        // Валидация
         int maxCoord = (1 << z) - 1;
         if (z < 0 || z > 19 || x < 0 || x > maxCoord || y < 0 || y > maxCoord) {
-            std::cerr << "Invalid tile: z=" << z << " x=" << x << " y=" << y << std::endl;
+            std::cerr << "[FAIL] Invalid tile: z=" << z << " x=" << x << " y=" << y << std::endl;
             return sf::Texture();
         }
 
         std::string url = buildTileUrl(z, x, y);
-        std::string cacheKey = url;
+        // Create cache key that doesn't depend on subdomain for load balancing
+        std::string cacheKey = std::to_string(static_cast<int>(m_source)) + "_" + 
+                              std::to_string(z) + "_" + std::to_string(x) + "_" + std::to_string(y);
+        if (m_source == TileSource::Custom) {
+            cacheKey += "_" + m_customUrl;
+        }
 
-        // Проверяем кэш
         {
             std::lock_guard<std::mutex> lock(m_cacheMutex);
             auto it = m_textureCache.find(cacheKey);
             if (it != m_textureCache.end()) {
-                std::cout << "Cache hit: " << url << std::endl;
-                return it->second;
+                it->second.lastUsed = std::chrono::steady_clock::now();
+                return it->second.texture;
             }
         }
 
-        // Загружаем
-        sf::Texture texture = downloadTile(url);
+        std::vector<uint8_t> data = downloadWithCurl(url);
+        sf::Texture texture = createTextureFromData(data);
 
         if (texture.getSize().x > 0) {
             std::lock_guard<std::mutex> lock(m_cacheMutex);
+
             if (m_textureCache.size() >= MAX_CACHE_SIZE) {
-                m_textureCache.clear();
+                cleanCache();
             }
-            m_textureCache[cacheKey] = texture;
+
+            CachedTexture cached;
+            cached.texture = texture;
+            cached.lastUsed = std::chrono::steady_clock::now();
+            cached.url = url; // Store the actual URL used
+            m_textureCache[cacheKey] = cached;
         }
 
         return texture;
     }
 
-    void clearCache() {
-        std::lock_guard<std::mutex> lock(m_cacheMutex);
-        m_textureCache.clear();
-        std::cout << "Cache cleared" << std::endl;
+    sf::Image loadTileImage(int z, int x, int y) {
+        // РџСЂРѕРІРµСЂРєР° РІР°Р»РёРґРЅРѕСЃС‚Рё
+        int maxCoord = (1 << z) - 1;
+        if (z < 0 || z > 19 || x < 0 || x > maxCoord || y < 0 || y > maxCoord) {
+            std::cerr << "[FAIL] Invalid tile: z=" << z << " x=" << x << " y=" << y << std::endl;
+            return sf::Image();
+        }
+
+        std::string url = buildTileUrl(z, x, y);
+        std::vector<uint8_t> data = downloadWithCurl(url);
+
+        sf::Image image;
+        if (!data.empty() && image.loadFromMemory(data.data(), data.size())) {
+            return image;
+        }
+        return sf::Image(); // РїСѓСЃС‚РѕРµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РїСЂРё РѕС€РёР±РєРµ
+    }
+
+    std::future<sf::Texture> loadTileAsync(int z, int x, int y) {
+        return std::async(std::launch::async, [this, z, x, y]() {
+            return loadTile(z, x, y);
+            });
     }
 
     bool isTileLoaded(int z, int x, int y) const {
-        std::string url = buildTileUrlConst(z, x, y);
+        // Create cache key that doesn't depend on subdomain for load balancing
+        std::string cacheKey = std::to_string(static_cast<int>(m_source)) + "_" + 
+                              std::to_string(z) + "_" + std::to_string(x) + "_" + std::to_string(y);
+        if (m_source == TileSource::Custom) {
+            cacheKey += "_" + m_customUrl;
+        }
         std::lock_guard<std::mutex> lock(m_cacheMutex);
-        return m_textureCache.find(url) != m_textureCache.end();
+        return m_textureCache.find(cacheKey) != m_textureCache.end();
+    }
+
+    void clearCache() {
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        m_textureCache.clear();
+        std::cout << "[OK] Cache cleared" << std::endl;
     }
 
     size_t getCacheSize() const {
         std::lock_guard<std::mutex> lock(m_cacheMutex);
         return m_textureCache.size();
+    }
+
+    void printStats() const {
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        std::cout << "=== TileLoader Stats ===" << std::endl;
+        std::cout << "Cache size: " << m_textureCache.size() << "/" << MAX_CACHE_SIZE << std::endl;
+        std::cout << "Source: " << static_cast<int>(m_source) << std::endl;
+        std::cout << "========================" << std::endl;
+    }
+
+    std::string getTileUrl(int z, int x, int y) const {
+        return buildTileUrlConst(z, x, y);
     }
 };

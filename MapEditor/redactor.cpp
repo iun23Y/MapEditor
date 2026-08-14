@@ -42,7 +42,8 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
         (void)font.openFromFile("C:/Windows/Fonts/arial.ttf");
     }
 
-    tileMap.emplace(0, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
+    tileMap.emplace(19, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
+    tileMap->setTileSource(TileSource::Google_Satellite);  // Переключаемся на Google
     redactorView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(static_cast<float>(width), static_cast<float>(height))));
     uiView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(static_cast<float>(width), static_cast<float>(height))));
     viewCenter = { 0.f, 0.f };
@@ -191,7 +192,7 @@ void Redactor::handleEvent() {
                 viewCenter = dragCenter + delta / zoom;
                 updateView();
             }
-            tileMap->update(redactorView);
+
             return;
         }
 
@@ -271,6 +272,8 @@ void Redactor::drawButton(const UIButton& button) {
 }
 
 void Redactor::draw() {
+    tileMap->update(redactorView);
+
     pollBuildTextures();
     window.clear(MAP_BACKGROUND_COLOR);
 
@@ -278,7 +281,7 @@ void Redactor::draw() {
 
     // If map is ready, render only the visible area into small temporary render targets.
     if (buildReady) {
-        
+
 
         if (renderSprite) {
             if (shadowShader && sf::Shader::isAvailable()) {
@@ -297,7 +300,7 @@ void Redactor::draw() {
             }
         }
     }
-    window.draw(tileMap.value());
+    tileMap->draw(window, sf::RenderStates::Default);
 
     window.setView(uiView);
 
