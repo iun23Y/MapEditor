@@ -118,7 +118,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>winmm.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;
 libcrypto.lib
-;crypt32.lib;cryptopp.lib
+;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib
 ;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files\vcpkg-master\installed\x64-windows-static\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
