@@ -296,6 +296,210 @@ namespace {
         {"minecraft:end_stone",       sf::Color(200, 200, 150)},
         {"minecraft:emerald_block",   sf::Color(69, 255, 109)}
     };
+    
+
+
+    void writeByte(std::vector<uint8_t>& out, uint8_t v) { out.push_back(v); }
+    void writeShort(std::vector<uint8_t>& out, int16_t v) {
+        out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+        out.push_back(static_cast<uint8_t>(v & 0xFF));
+    }
+    void writeInt(std::vector<uint8_t>& out, int32_t v) {
+        out.push_back(static_cast<uint8_t>((v >> 24) & 0xFF));
+        out.push_back(static_cast<uint8_t>((v >> 16) & 0xFF));
+        out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+        out.push_back(static_cast<uint8_t>(v & 0xFF));
+    }
+    void writeLong(std::vector<uint8_t>& out, int64_t v) {
+        for (int i = 7; i >= 0; --i)
+            out.push_back(static_cast<uint8_t>((v >> (i * 8)) & 0xFF));
+    }
+    void writeString(std::vector<uint8_t>& out, const std::string& s) {
+        writeShort(out, static_cast<int16_t>(s.size()));
+        out.insert(out.end(), s.begin(), s.end());
+    }
+    void writeTagType(std::vector<uint8_t>& out, TagType type) {
+        out.push_back(static_cast<uint8_t>(type));
+    }
+
+    // Запись payload (без имени) — используется для списков
+    void writeTagPayload(const std::shared_ptr<Tag>& tag, std::vector<uint8_t>& out) {
+        if (!tag) return;
+        switch (tag->type) {
+        case TagType::TAG_BYTE: {
+            auto t = std::dynamic_pointer_cast<TagByte>(tag);
+            writeByte(out, static_cast<uint8_t>(t->value));
+            break;
+        }
+        case TagType::TAG_SHORT: {
+            auto t = std::dynamic_pointer_cast<TagShort>(tag);
+            writeShort(out, t->value);
+            break;
+        }
+        case TagType::TAG_INT: {
+            auto t = std::dynamic_pointer_cast<TagInt>(tag);
+            writeInt(out, t->value);
+            break;
+        }
+        case TagType::TAG_LONG: {
+            auto t = std::dynamic_pointer_cast<TagLong>(tag);
+            writeLong(out, t->value);
+            break;
+        }
+        case TagType::TAG_STRING: {
+            auto t = std::dynamic_pointer_cast<TagString>(tag);
+            writeString(out, t->value);
+            break;
+        }
+        case TagType::TAG_BYTE_ARRAY: {
+            auto t = std::dynamic_pointer_cast<TagByteArray>(tag);
+            writeInt(out, static_cast<int32_t>(t->value.size()));
+            out.insert(out.end(), t->value.begin(), t->value.end());
+            break;
+        }
+        case TagType::TAG_INT_ARRAY: {
+            auto t = std::dynamic_pointer_cast<TagIntArray>(tag);
+            writeInt(out, static_cast<int32_t>(t->value.size()));
+            for (int32_t v : t->value) writeInt(out, v);
+            break;
+        }
+        case TagType::TAG_LONG_ARRAY: {
+            auto t = std::dynamic_pointer_cast<TagLongArray>(tag);
+            writeInt(out, static_cast<int32_t>(t->value.size()));
+            for (int64_t v : t->value) writeLong(out, v);
+            break;
+        }
+        case TagType::TAG_LIST: {
+            auto t = std::dynamic_pointer_cast<TagList>(tag);
+            writeTagType(out, t->elementType);
+            writeInt(out, static_cast<int32_t>(t->elements.size()));
+            for (auto& child : t->elements)
+                writeTagPayload(child, out);
+            break;
+        }
+        case TagType::TAG_COMPOUND: {
+            auto t = std::dynamic_pointer_cast<TagCompound>(tag);
+            // Compound в списке не используется в Sponge Schematic, но на всякий случай запишем все дочерние теги
+            for (auto& [name, child] : t->children) {
+                writeTagType(out, child->type);
+                writeString(out, name);
+                // рекурсивно пишем payload без имени? Но у нас есть writeTag, который пишет полный тег с именем.
+                // Для компаунда внутри списка нужно писать без имени, но имена уже есть в children.
+                // Проще использовать writeTag, который пишет тип+имя+payload.
+                // Но тогда это нарушит структуру, так как список ожидает последовательность тегов без имён.
+                // Такого в реальности не бывает, поэтому кинем исключение.
+                throw std::runtime_error("Nested compound inside list is not supported");
+            }
+            break;
+        }
+        default:
+            throw std::runtime_error("Unsupported tag type for payload");
+        }
+    }
+
+    // Запись полного тега (тип + имя + payload)
+    void writeTag(const std::shared_ptr<Tag>& tag, std::vector<uint8_t>& out) {
+        if (!tag) return;
+        writeTagType(out, tag->type);
+        writeString(out, tag->name);
+
+        switch (tag->type) {
+        case TagType::TAG_BYTE: {
+            auto t = std::dynamic_pointer_cast<TagByte>(tag);
+            writeByte(out, static_cast<uint8_t>(t->value));
+            break;
+        }
+        case TagType::TAG_SHORT: {
+            auto t = std::dynamic_pointer_cast<TagShort>(tag);
+            writeShort(out, t->value);
+            break;
+        }
+        case TagType::TAG_INT: {
+            auto t = std::dynamic_pointer_cast<TagInt>(tag);
+            writeInt(out, t->value);
+            break;
+        }
+        case TagType::TAG_LONG: {
+            auto t = std::dynamic_pointer_cast<TagLong>(tag);
+            writeLong(out, t->value);
+            break;
+        }
+        case TagType::TAG_STRING: {
+            auto t = std::dynamic_pointer_cast<TagString>(tag);
+            writeString(out, t->value);
+            break;
+        }
+        case TagType::TAG_BYTE_ARRAY: {
+            auto t = std::dynamic_pointer_cast<TagByteArray>(tag);
+            writeInt(out, static_cast<int32_t>(t->value.size()));
+            out.insert(out.end(), t->value.begin(), t->value.end());
+            break;
+        }
+        case TagType::TAG_INT_ARRAY: {
+            auto t = std::dynamic_pointer_cast<TagIntArray>(tag);
+            writeInt(out, static_cast<int32_t>(t->value.size()));
+            for (int32_t v : t->value) writeInt(out, v);
+            break;
+        }
+        case TagType::TAG_LONG_ARRAY: {
+            auto t = std::dynamic_pointer_cast<TagLongArray>(tag);
+            writeInt(out, static_cast<int32_t>(t->value.size()));
+            for (int64_t v : t->value) writeLong(out, v);
+            break;
+        }
+        case TagType::TAG_LIST: {
+            auto t = std::dynamic_pointer_cast<TagList>(tag);
+            writeTagType(out, t->elementType);
+            writeInt(out, static_cast<int32_t>(t->elements.size()));
+            for (auto& child : t->elements)
+                writeTagPayload(child, out);
+            break;
+        }
+        case TagType::TAG_COMPOUND: {
+            auto t = std::dynamic_pointer_cast<TagCompound>(tag);
+            for (auto& [name, child] : t->children) {
+                writeTag(child, out); // рекурсивно записываем каждый дочерний тег (с именем)
+            }
+            writeTagType(out, TagType::TAG_END); // завершающий тег
+            break;
+        }
+        default:
+            throw std::runtime_error("Unsupported tag type for serialization");
+        }
+    }
+
+    // Сжатие gzip (для экспорта)
+    std::vector<uint8_t> gzipCompress(const std::vector<uint8_t>& data) {
+        z_stream strm{};
+        strm.zalloc = Z_NULL;
+        strm.zfree = Z_NULL;
+        strm.opaque = Z_NULL;
+        if (deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+            throw std::runtime_error("deflateInit2 failed");
+
+        strm.avail_in = static_cast<uInt>(data.size());
+        strm.next_in = const_cast<Bytef*>(data.data());
+
+        std::vector<uint8_t> output;
+        constexpr std::size_t CHUNK = 8192;
+        uint8_t buffer[CHUNK];
+        int ret = Z_OK;
+
+        do {
+            strm.avail_out = CHUNK;
+            strm.next_out = buffer;
+            ret = deflate(&strm, Z_FINISH);
+            if (ret != Z_OK && ret != Z_STREAM_END) {
+                deflateEnd(&strm);
+                throw std::runtime_error("deflate error");
+            }
+            std::size_t have = CHUNK - strm.avail_out;
+            output.insert(output.end(), buffer, buffer + have);
+        } while (ret != Z_STREAM_END);
+
+        deflateEnd(&strm);
+        return output;
+    }
 } // anonymous namespace
 
 // =============================================================================// BlockPalette
@@ -394,6 +598,38 @@ std::vector<std::int32_t> decodeBlockIndices(const std::vector<std::uint8_t>& ra
 
 // Region size
 static constexpr int REGION_SIZE = 1000;
+
+std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(
+    int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const
+{
+    std::vector<RegionBlock> result;
+
+    // Which regions intersect the area
+    int startRegionX = (minX >= 0 ? minX / REGION_SIZE : (minX - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+    int endRegionX = (maxX >= 0 ? maxX / REGION_SIZE : (maxX - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+    int startRegionY = minY;
+    int endRegionY = maxY;
+    int startRegionZ = (minZ >= 0 ? minZ / REGION_SIZE : (minZ - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+    int endRegionZ = (maxZ >= 0 ? maxZ / REGION_SIZE : (maxZ - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+
+    for (int ry = startRegionY; ry <= endRegionY; ++ry) {
+        for (int rx = startRegionX; rx <= endRegionX; rx += REGION_SIZE) {
+            for (int rz = startRegionZ; rz <= endRegionZ; rz += REGION_SIZE) {
+                auto regionBlocks = getRegionBlocks(rx, ry, rz);
+                for (auto& b : regionBlocks) {
+                    if (b.x >= minX && b.x <= maxX &&
+                        b.y >= minY && b.y <= maxY &&
+                        b.z >= minZ && b.z <= maxZ) {
+                        result.push_back(b);
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
 
 std::string SchematicMap::getRegionName(int regionX, int regionY, int regionZ) {
     return std::to_string(regionX) + "_" + std::to_string(regionY) + "_" + std::to_string(regionZ);
@@ -634,6 +870,211 @@ void SchematicMap::loadFromFile(const std::string& filename) {
     }
 }
 
+void SchematicMap::exportToSchematic(const std::string& baseName, const std::string& outputDir) const {
+    fs::path outPath = fs::path(outputDir);
+    fs::create_directories(outPath);
+
+    if (!hasBounds) {
+        std::cerr << "World has no blocks to export.\n";
+        return;
+    }
+
+    // Константа размера ячейки (2000)
+    const int CELL_SIZE = 2000;
+
+    // Границы мира
+    int worldMinX = Pos1.x;
+    int worldMaxX = Pos2.x - 1;
+    int worldMinY = Pos1.y;
+    int worldMaxY = Pos2.y - 1;
+    int worldMinZ = Pos1.z;
+    int worldMaxZ = Pos2.z - 1;
+
+    // Размеры схемы в блоках
+    int sizeX = worldMaxX - worldMinX + 1;
+    int sizeZ = worldMaxZ - worldMinZ + 1;
+
+    // Количество ячеек по X и Z (округление вверх)
+    int cellsX = (sizeX + CELL_SIZE - 1) / CELL_SIZE;
+    int cellsZ = (sizeZ + CELL_SIZE - 1) / CELL_SIZE;
+
+    // Проходим по локальной сетке (индексы ячеек 0,1,2...)
+    for (int ix = 0; ix < cellsX; ++ix) {
+        for (int iz = 0; iz < cellsZ; ++iz) {
+            // Глобальные координаты текущей ячейки
+            int minX = worldMinX + ix * CELL_SIZE;
+            int maxX = std::min(minX + CELL_SIZE - 1, worldMaxX);
+            int minZ = worldMinZ + iz * CELL_SIZE;
+            int maxZ = std::min(minZ + CELL_SIZE - 1, worldMaxZ);
+
+            // Получаем все блоки в этой ячейке (по полной высоте)
+            auto blocks = getBlocksInArea(minX, worldMinY, minZ, maxX, worldMaxY, maxZ);
+            if (blocks.empty()) continue;
+
+            // ---------- Палитра ----------
+            std::unordered_map<int32_t, int32_t> globalToLocal;
+            std::vector<std::string> paletteNames = { "minecraft:air" };
+            for (const auto& b : blocks) {
+                if (globalToLocal.find(b.blockId) == globalToLocal.end()) {
+                    std::string name = palette.getName(b.blockId);
+                    if (name.empty()) name = "minecraft:air";
+                    globalToLocal[b.blockId] = static_cast<int32_t>(paletteNames.size());
+                    paletteNames.push_back(name);
+                }
+            }
+
+            // Размеры ячейки (локальные)
+            int width = maxX - minX + 1;
+            int height = worldMaxY - worldMinY + 1;
+            int length = maxZ - minZ + 1;
+            int volume = width * height * length;
+
+            // Индексы блоков (локальные координаты внутри ячейки)
+            std::vector<int32_t> indices(volume, 0);
+            for (const auto& b : blocks) {
+                int localX = b.x - minX;
+                int localY = b.y - worldMinY;
+                int localZ = b.z - minZ;
+                int idx = (localY * length + localZ) * width + localX;
+                auto it = globalToLocal.find(b.blockId);
+                if (it != globalToLocal.end())
+                    indices[idx] = it->second;
+            }
+
+            // VarInt-кодирование (Sponge v3)
+            std::vector<uint8_t> blockData;
+            for (int32_t val : indices) {
+                uint32_t v = static_cast<uint32_t>(val);
+                do {
+                    uint8_t byte = v & 0x7F;
+                    v >>= 7;
+                    if (v != 0) byte |= 0x80;
+                    blockData.push_back(byte);
+                } while (v != 0);
+            }
+
+            // Плоский массив для совместимости (Classic)
+            std::vector<uint8_t> flatData;
+            flatData.reserve(indices.size());
+            for (int32_t idx : indices) {
+                flatData.push_back(static_cast<uint8_t>(std::min(idx, 255)));
+            }
+
+            // ---------- Сборка NBT ----------
+            auto root = std::make_shared<TagCompound>();
+            root->type = TagType::TAG_COMPOUND;
+            root->name = "";
+
+            auto schemCompound = std::make_shared<TagCompound>();
+            schemCompound->type = TagType::TAG_COMPOUND;
+            schemCompound->name = "Schematic";
+
+            // Version
+            auto versionTag = std::make_shared<TagInt>();
+            versionTag->type = TagType::TAG_INT;
+            versionTag->name = "Version";
+            versionTag->value = 3;
+            schemCompound->children["Version"] = versionTag;
+
+            // DataVersion
+            auto dataVersionTag = std::make_shared<TagInt>();
+            dataVersionTag->type = TagType::TAG_INT;
+            dataVersionTag->name = "DataVersion";
+            dataVersionTag->value = 3700;
+            schemCompound->children["DataVersion"] = dataVersionTag;
+
+            // Width, Height, Length
+            auto widthTag = std::make_shared<TagShort>();
+            widthTag->type = TagType::TAG_SHORT;
+            widthTag->name = "Width";
+            widthTag->value = static_cast<int16_t>(width);
+            schemCompound->children["Width"] = widthTag;
+
+            auto heightTag = std::make_shared<TagShort>();
+            heightTag->type = TagType::TAG_SHORT;
+            heightTag->name = "Height";
+            heightTag->value = static_cast<int16_t>(height);
+            schemCompound->children["Height"] = heightTag;
+
+            auto lengthTag = std::make_shared<TagShort>();
+            lengthTag->type = TagType::TAG_SHORT;
+            lengthTag->name = "Length";
+            lengthTag->value = static_cast<int16_t>(length);
+            schemCompound->children["Length"] = lengthTag;
+
+            // Offset – глобальные координаты ячейки
+            auto offsetArray = std::make_shared<TagIntArray>();
+            offsetArray->type = TagType::TAG_INT_ARRAY;
+            offsetArray->name = "Offset";
+            offsetArray->value = { minX, worldMinY, minZ };
+            schemCompound->children["Offset"] = offsetArray;
+
+            // Метаданные
+            auto metadata = std::make_shared<TagCompound>();
+            metadata->type = TagType::TAG_COMPOUND;
+            metadata->name = "Metadata";
+
+            auto authorTag = std::make_shared<TagString>();
+            authorTag->type = TagType::TAG_STRING;
+            authorTag->name = "author";
+            authorTag->value = "MapEditor";
+
+            auto nameTag = std::make_shared<TagString>();
+            nameTag->type = TagType::TAG_STRING;
+            nameTag->name = "name";
+            nameTag->value = "ME-BTE-schematic";
+
+            metadata->children["author"] = authorTag;
+            metadata->children["name"] = nameTag;
+            schemCompound->children["Metadata"] = metadata;
+
+            // Blocks
+            auto blocksCompound = std::make_shared<TagCompound>();
+            blocksCompound->type = TagType::TAG_COMPOUND;
+            blocksCompound->name = "Blocks";
+
+            // Palette
+            auto paletteCompound = std::make_shared<TagCompound>();
+            paletteCompound->type = TagType::TAG_COMPOUND;
+            paletteCompound->name = "Palette";
+            for (size_t i = 0; i < paletteNames.size(); ++i) {
+                auto idTag = std::make_shared<TagInt>();
+                idTag->type = TagType::TAG_INT;
+                idTag->name = paletteNames[i];
+                idTag->value = static_cast<int32_t>(i);
+                paletteCompound->children[paletteNames[i]] = idTag;
+            }
+            blocksCompound->children["Palette"] = paletteCompound;
+
+            // Data (Classic)
+            auto dataTag = std::make_shared<TagByteArray>();
+            dataTag->type = TagType::TAG_BYTE_ARRAY;
+            dataTag->name = "Data";
+            dataTag->value = std::move(flatData);
+            blocksCompound->children["Data"] = dataTag;
+
+            schemCompound->children["Blocks"] = blocksCompound;
+            root->children["Schematic"] = schemCompound;
+
+            // Сериализация
+            std::vector<uint8_t> nbtData;
+            writeTag(root, nbtData);
+            auto compressed = gzipCompress(nbtData);
+
+            // Имя файла: baseName-ixxiz.schem
+            std::string filename = baseName + "-" + std::to_string(ix) + "x" + std::to_string(iz) + ".schem";
+            fs::path filepath = outPath / filename;
+            std::ofstream outFile(filepath, std::ios::binary);
+            if (!outFile) {
+                std::cerr << "Failed to create " << filepath << "\n";
+                continue;
+            }
+            outFile.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
+            std::cout << "Exported " << filepath << " (" << blocks.size() << " blocks)\n";
+        }
+    }
+}
+
 int SchematicMap::getBlock(int x, int y, int z) const {
     int regionX = (x >= 0 ? x / REGION_SIZE : (x - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
     int regionY = y;
@@ -703,6 +1144,38 @@ void SchematicMap::setBlock(int x, int y, int z, int blockId) {
     writeRegionBlocks(filePath, existing);
 }
 
+void SchematicMap::setBlocks(const std::vector<std::tuple<int, int, int, int>>& blocks) {
+    // Группируем изменения по регионам
+    std::unordered_map<std::string, std::unordered_map<RegionPos, int32_t, RegionPosHash>> regionChanges;
+
+    for (const auto& [x, y, z, id] : blocks) {
+        int regionX = (x >= 0 ? x / REGION_SIZE : (x - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+        int regionY = y;
+        int regionZ = (z >= 0 ? z / REGION_SIZE : (z - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+        std::string regionName = getRegionName(regionX, regionY, regionZ);
+
+        RegionPos pos{ x - regionX, y - regionY, z - regionZ };
+        regionChanges[regionName][pos] = id; // перезаписываем, если уже есть
+    }
+
+    // Применяем изменения для каждого региона
+    for (auto& [regionName, changes] : regionChanges) {
+        fs::path filePath = getRegionPath(worldPath / "regions", regionName);
+        auto existing = loadRegionBlocks(filePath);
+
+        for (auto& [pos, id] : changes) {
+            if (id < 0) {
+                existing.erase(pos);
+            }
+            else {
+                existing[pos] = id;
+            }
+        }
+
+        writeRegionBlocks(filePath, existing);
+    }
+}
+
 void SchematicMap::removeBlock(int x, int y, int z) {
     setBlock(x, y, z, -1);
 }
@@ -762,33 +1235,3 @@ std::vector<SchematicMap::RegionBlock> SchematicMap::getRegionBlocks(int regionX
     return result;
 }
 
-std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(
-    int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const
-{
-    std::vector<RegionBlock> result;
-
-    // Which regions intersect the area
-    int startRegionX = (minX >= 0 ? minX / REGION_SIZE : (minX - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
-    int endRegionX   = (maxX >= 0 ? maxX / REGION_SIZE : (maxX - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
-    int startRegionY = minY;
-    int endRegionY   = maxY;
-    int startRegionZ = (minZ >= 0 ? minZ / REGION_SIZE : (minZ - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
-    int endRegionZ   = (maxZ >= 0 ? maxZ / REGION_SIZE : (maxZ - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
-
-    for (int ry = startRegionY; ry <= endRegionY; ++ry) {
-        for (int rx = startRegionX; rx <= endRegionX; rx += REGION_SIZE) {
-            for (int rz = startRegionZ; rz <= endRegionZ; rz += REGION_SIZE) {
-                auto regionBlocks = getRegionBlocks(rx, ry, rz);
-                for (auto& b : regionBlocks) {
-                    if (b.x >= minX && b.x <= maxX &&
-                        b.y >= minY && b.y <= maxY &&
-                        b.z >= minZ && b.z <= maxZ) {
-                        result.push_back(b);
-                    }
-                }
-            }
-        }
-    }
-
-    return result;
-}

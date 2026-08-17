@@ -139,25 +139,29 @@ libcrypto.lib
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>winmm.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;
 libcrypto.lib
-;crypt32.lib;cryptopp.lib
+;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib
 ;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\path\to\vcpkg\installed\x64-windows-static\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BTEGeoConventor.h" />
+    <ClInclude Include="Button.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="schematic.h" />
     <ClInclude Include="redactor.h" />
     <ClInclude Include="tileLoader.h" />
     <ClInclude Include="tileMap.h" />
+    <ClInclude Include="GuiManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BTEGeoConventor.cpp" />
+    <ClCompile Include="Button.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="schematic.cpp" />
     <ClCompile Include="redactor.cpp" />
+    <ClCompile Include="GuiManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

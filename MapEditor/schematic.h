@@ -59,12 +59,15 @@ public:
     // Load schematic — immediately writes to disk, does not keep in memory
     void loadFromFile(const std::string& filename);
 
+    void exportToSchematic(const std::string& baseName, const std::string& outputDir) const;
+
     // Get a block by absolute coordinates (reads from disk)
     int getBlock(int x, int y, int z) const;
 
     // Set or remove a block by absolute coordinates.
     // blockId < 0 means air / remove.
     void setBlock(int x, int y, int z, int blockId);
+    void setBlocks(const std::vector<std::tuple<int, int, int, int>>& blocks);
     void removeBlock(int x, int y, int z);
 
     // Get block color
@@ -84,7 +87,7 @@ public:
     // Get blocks for the visible area (for rendering)
     std::vector<RegionBlock> getBlocksInArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const;
 
-    const BlockPalette& getPalette() const { return palette; }
+    BlockPalette& getPalette() { return palette; }
     sf::Vector3i getPos1() const { return Pos1; }
     sf::Vector3i getPos2() const { return Pos2; }
     std::filesystem::path getWorldPath() const { return worldPath; }
