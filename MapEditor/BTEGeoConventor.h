@@ -14,6 +14,7 @@
 #include <cryptopp/base64.h>
 #include <cryptopp/filters.h>
 #include <cryptopp/hex.h>
+#include "helper.h"
 
 constexpr double PI = 3.14159265358979323846;
 
@@ -38,8 +39,8 @@ namespace BTEGeoConventor {
                 double v = 2 * y / ROOT3;
                 double u = x - v * 0.5;
 
-                int u1 = std::max(0, std::min(int(u), side_length - 1));
-                int v1 = std::max(0, std::min(int(v), side_length - u1 - 1));
+                int u1 = (std::max)(0, (std::min)(int(u), side_length - 1));
+                int v1 = (std::max)(0, (std::min)(int(v), side_length - u1 - 1));
 
                 int flip = 1;
                 double valx1, valy1, valx2, valy2, valx3, valy3, y3, x3;
@@ -118,7 +119,7 @@ namespace BTEGeoConventor {
         }
 
         inline std::vector<std::vector<double>> load_conformal_data() {
-            std::string conformal_file = std::filesystem::current_path().string() + "/conformal.txt";
+            std::string conformal_file = getExeDirectory() + "conformal.txt";
 
             if (!std::filesystem::exists(conformal_file)) {
                 throw std::runtime_error("Required conformal correction file not found: " + conformal_file);
