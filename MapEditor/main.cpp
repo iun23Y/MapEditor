@@ -5,24 +5,6 @@
 #include <windows.h>
 #include "BTEGeoConventor.h"
 
-class Redactor {
-private:
-    sf::View redactorView;
-    sf::View uiView;
-
-	sf::RenderWindow window;
-	SchematicMap map;
-public:
-    void updateUI() {
-		window.setView(uiView);
-
-
-
-		window.setView(redactorView);
-    }
-};
-
-
 int runApplication() {
     try {
         Menu menu(800, 600);
@@ -43,9 +25,13 @@ int runApplication() {
         return 1;
     }
 }
-
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+#ifdef _DEBUG
+int main() {
+    return runApplication();
+}
+#else
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     (void)hInstance; (void)hPrevInstance; (void)lpCmdLine; (void)nCmdShow;
     return runApplication();
-
 }
+#endif

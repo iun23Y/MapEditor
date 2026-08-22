@@ -150,6 +150,7 @@ libcrypto.lib
     <ClInclude Include="menu.h" />
     <ClInclude Include="schematic.h" />
     <ClInclude Include="redactor.h" />
+    <ClInclude Include="schematicTexture.h" />
     <ClInclude Include="tileLoader.h" />
     <ClInclude Include="tileMap.h" />
     <ClInclude Include="GuiManager.h" />
@@ -162,6 +163,7 @@ libcrypto.lib
     <ClCompile Include="schematic.cpp" />
     <ClCompile Include="redactor.cpp" />
     <ClCompile Include="GuiManager.cpp" />
+    <ClCompile Include="schematicTexture.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

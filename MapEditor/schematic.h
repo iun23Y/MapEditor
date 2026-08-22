@@ -86,6 +86,7 @@ public:
 
     // Get blocks for the visible area (for rendering)
     std::vector<RegionBlock> getBlocksInArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const;
+    std::vector<RegionBlock> getTopBlocksInArea(int minX, int minZ, int maxX, int maxZ) const;
 
     BlockPalette& getPalette() { return palette; }
     sf::Vector3i getPos1() const { return Pos1; }
