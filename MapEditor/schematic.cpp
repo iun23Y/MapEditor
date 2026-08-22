@@ -1,4 +1,5 @@
 #include "schematic.h"
+#include "helper.h"
 
 #include <SFML/Graphics/Color.hpp>
 
@@ -593,15 +594,10 @@ std::vector<std::int32_t> decodeBlockIndices(const std::vector<std::uint8_t>& ra
     return indices;
 }
 
-// =============================================================================// SchematicMap
-// =============================================================================
-
-// Region size
 static constexpr int REGION_SIZE = 1000;
 
 std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(
-    int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const
-{
+    int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const {
     std::vector<RegionBlock> result;
 
     // Which regions intersect the area
@@ -627,6 +623,43 @@ std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(
         }
     }
 
+    return result;
+}
+std::vector<SchematicMap::RegionBlock> SchematicMap::getTopBlocksInArea(
+    int minX, int minZ, int maxX, int maxZ) const {
+    std::unordered_map<std::pair<int, int>, RegionBlock, PairHash> topMap;
+
+    int minY = Pos1.y;
+    int maxY = Pos2.y - 1;
+
+    int startRX = (minX >= 0 ? minX / REGION_SIZE : (minX - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+    int endRX = (maxX >= 0 ? maxX / REGION_SIZE : (maxX - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+    int startRZ = (minZ >= 0 ? minZ / REGION_SIZE : (minZ - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+    int endRZ = (maxZ >= 0 ? maxZ / REGION_SIZE : (maxZ - (REGION_SIZE - 1)) / REGION_SIZE) * REGION_SIZE;
+
+    for (int ry = minY; ry <= maxY; ++ry) {
+        for (int rx = startRX; rx <= endRX; rx += REGION_SIZE) {
+            for (int rz = startRZ; rz <= endRZ; rz += REGION_SIZE) {
+                auto blocks = getRegionBlocks(rx, ry, rz);
+                for (const auto& b : blocks) {
+                    if (b.x >= minX && b.x <= maxX && b.z >= minZ && b.z <= maxZ) {
+                        auto key = std::make_pair(b.x, b.z);
+                        auto it = topMap.find(key);
+                        if (it == topMap.end() || b.y > it->second.y) {
+                            topMap[key] = b;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Преобразуем карту в вектор
+    std::vector<RegionBlock> result;
+    result.reserve(topMap.size());
+    for (const auto& pair : topMap) {
+        result.push_back(pair.second);
+    }
     return result;
 }
 
