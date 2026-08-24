@@ -17,6 +17,24 @@ static std::string getExeDirectory() {
     return path;
 }
 
+static std::vector<sf::Vector2i> bresenhamLine(int x0, int z0, int x1, int z1) {
+    std::vector<sf::Vector2i> points;
+    int dx = std::abs(x1 - x0);
+    int dz = std::abs(z1 - z0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sz = (z0 < z1) ? 1 : -1;
+    int err = dx - dz;
+
+    while (true) {
+        points.emplace_back(x0, z0);
+        if (x0 == x1 && z0 == z1) break;
+        int e2 = 2 * err;
+        if (e2 > -dz) { err -= dz; x0 += sx; }
+        if (e2 < dx) { err += dx; z0 += sz; }
+    }
+    return points;
+}
+
 struct PairHash {
     std::size_t operator()(const std::pair<int, int>& p) const {
         return std::hash<int>{}(p.first) ^ (std::hash<int>{}(p.second) << 1);

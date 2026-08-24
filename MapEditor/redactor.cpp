@@ -1,10 +1,19 @@
 #include "redactor.h"
 #include "schematic.h"
-#include "GuiManager.h"   // <-- новый заголовок
-#include "helper.h"     // <-- для getExeDirectory
+#include "GuiManager.h"
+#include "helper.h"
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#include <windows.h>
+#include <shlobj.h>
+#include <shellapi.h>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <commdlg.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -15,30 +24,10 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <windows.h>
-#include <shlobj.h>
-#include <shellapi.h>
+
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "Comdlg32.lib")
 
-static std::vector<sf::Vector2i> bresenhamLine(int x0, int z0, int x1, int z1) {
-    std::vector<sf::Vector2i> points;
-    int dx = std::abs(x1 - x0);
-    int dz = std::abs(z1 - z0);
-    int sx = (x0 < x1) ? 1 : -1;
-    int sz = (z0 < z1) ? 1 : -1;
-    int err = dx - dz;
-
-    while (true) {
-        points.emplace_back(x0, z0);
-        if (x0 == x1 && z0 == z1) break;
-        int e2 = 2 * err;
-        if (e2 > -dz) { err -= dz; x0 += sx; }
-        if (e2 < dx) { err += dx; z0 += sz; }
-    }
-    return points;
-}
-
-// Определение статической константы (только фон карты)
 const sf::Color Redactor::MAP_BACKGROUND_COLOR = sf::Color(0, 0, 0);
 
 void Redactor::addRectPoint(const sf::Vector2f& point) {
@@ -64,12 +53,13 @@ void Redactor::addRectPoint(const sf::Vector2f& point) {
 }
 
 void buildPoligon() {
+
+
     // This function is a placeholder for future polygon building logic.
 	// Currently, it does nothing.
 }
 
 void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, const sf::Vector2f& p3) {
-    // 1. Направления и длины (в пикселях / метрах)
     sf::Vector2f dir = p2 - p1;
     float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
     if (len < 1e-6f) {
@@ -79,7 +69,6 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
     dir /= len;
     sf::Vector2f perp(-dir.y, dir.x);
 
-    // Ширина (проекция p3-p2 на перпендикуляр)
     sf::Vector2f toP3 = p3 - p2;
     float w = toP3.x * perp.x + toP3.y * perp.y;
     if (w < 0) {
@@ -87,7 +76,6 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
         w = -w;
     }
 
-    // 2. Округляем длины до целого числа блоков
     int lenBlocks = static_cast<int>(std::round(len));
     int widthBlocks = static_cast<int>(std::round(w));
 
@@ -96,12 +84,9 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
         return;
     }
 
-    // 3. Выбираем начальную точку (округляем p1 до целых координат)
     int startX = static_cast<int>(std::floor(p1.x));
     int startZ = static_cast<int>(std::floor(p1.y));
 
-    // 4. Вычисляем координаты углов с целочисленными смещениями
-    //    Используем round для приведения направлений к целым шагам
     int c1x = startX, c1z = startZ;
     int c2x = startX + static_cast<int>(std::round(dir.x * lenBlocks));
     int c2z = startZ + static_cast<int>(std::round(dir.y * lenBlocks));
@@ -110,19 +95,16 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
     int c4x = startX + static_cast<int>(std::round(perp.x * widthBlocks));
     int c4z = startZ + static_cast<int>(std::round(perp.y * widthBlocks));
 
-    // 5. Генерация контура (алгоритм Брезенхема)
     std::vector<sf::Vector2i> borderBlocks;
     auto addLine = [&](int ax, int az, int bx, int bz) {
         auto line = bresenhamLine(ax, az, bx, bz);
         borderBlocks.insert(borderBlocks.end(), line.begin(), line.end());
         };
-
     addLine(c1x, c1z, c2x, c2z);
     addLine(c2x, c2z, c3x, c3z);
     addLine(c3x, c3z, c4x, c4z);
     addLine(c4x, c4z, c1x, c1z);
 
-    // Удаление дубликатов
     std::sort(borderBlocks.begin(), borderBlocks.end(),
         [](const sf::Vector2i& a, const sf::Vector2i& b) {
             return (a.x < b.x) || (a.x == b.x && a.y < b.y);
@@ -133,7 +115,6 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
         }),
         borderBlocks.end());
 
-    // 6. Определение высот (без изменений)
     sf::Vector3i pos1 = schem->getPos1();
     sf::Vector3i pos2 = schem->getPos2();
     int offsetX = pos1.x;
@@ -162,7 +143,6 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
     int startY = minHeight - 1;
     int endY = maxHeight + 1;
 
-    // 7. Блок (красная шерсть)
     auto& palette = schem->getPalette();
     int blockId = palette.getId("minecraft:red_wool");
     if (blockId < 0) {
@@ -174,8 +154,6 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
         palette.addBlock(newId, "minecraft:red_wool");
         blockId = newId;
     }
-
-    // 8. Пакетная запись
     std::vector<std::tuple<int, int, int, int>> blocksToSet;
     blocksToSet.reserve(borderBlocks.size() * (endY - startY + 1));
 
@@ -186,7 +164,6 @@ void Redactor::buildRectangle(const sf::Vector2f& p1, const sf::Vector2f& p2, co
             blocksToSet.emplace_back(absX, y, absZ, blockId);
         }
     }
-
     if (!blocksToSet.empty()) {
         schem->setBlocks(blocksToSet);
         setStatusText(L"Контур построен (" + std::to_wstring(blocksToSet.size()) + L" блоков)");
@@ -208,14 +185,11 @@ void Redactor::drawRectPreview(sf::RenderWindow& window, const sf::View& view) {
         window.draw(line, 2, sf::PrimitiveType::Lines);
     }
     else if (rectStage == RectStage::SecondPoint) {
-        // Основная линия (красная)
         sf::Vertex line1[] = {
             sf::Vertex(rectP1, sf::Color::Red),
             sf::Vertex(rectP2, sf::Color::Red)
         };
         window.draw(line1, 2, sf::PrimitiveType::Lines);
-
-        // Перпендикуляр от rectP2 к мыши (жёлтый)
         sf::Vector2f dir = rectP2 - rectP1;
         float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
         if (len > 1e-6f) {
@@ -233,7 +207,6 @@ void Redactor::drawRectPreview(sf::RenderWindow& window, const sf::View& view) {
     }
 }
 
-// ----------------------- Конструктор -----------------------
 Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int height)
     : schem(std::move(schematic)), windowWidth(width), windowHeight(height),
     window(sf::VideoMode({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }),
@@ -245,7 +218,7 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
     }
 
     try {
-        tileMap.emplace(19, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
+        tileMap.emplace(15, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
         tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize tile map: " << e.what() << std::endl;
@@ -254,7 +227,7 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
         std::cerr << "Tile map is not ready!" << std::endl;
 	}
 
-    textureManager.emplace(schem.get());
+    schematicTexture.emplace(schem.get(), &textureManager);
 
     viewCenter = { static_cast<float>(schem->getPos1().x), static_cast<float>(schem->getPos1().z) };
     redactorView = sf::View(sf::FloatRect({ static_cast<float>(schem->getPos1().x), static_cast<float>(schem->getPos1().z) }, {static_cast<float>(width), static_cast<float>(height)}));
@@ -329,26 +302,16 @@ void main() {
     gl_FragColor = vec4(shadedColor, alpha);
 }
 )";
-
-    // Текстовые поля
     statusText = std::make_unique<sf::Text>(font, L"Loading map...", 14);
     statusText->setFillColor(GuiStyle::TextColor);
-    infoText = std::make_unique<sf::Text>(font, L"", 14);
-    infoText->setFillColor(GuiStyle::TextColor);
 }
 
-// ----------------------- Инициализация UI -----------------------
 void Redactor::initUI() {
-    // Загружаем шрифт для UI, если ещё не загружен
     if (ui.getFont().getInfo().family.empty()) {
         ui.loadFont(getExeDirectory() + "Benbow Regular.ttf");
     }
-
-    // Очищаем существующие плитки вместо полной пересоздания
-    // Для простоты оставляем пересоздание, но в будущем можно оптимизировать
     ui = GuiManager();
     if (!ui.loadFont(getExeDirectory() + "Benbow Regular.ttf")) {
-        // Fallback to Arial if Benbow not found
         ui.loadFont("C:/Windows/Fonts/arial.ttf");
     }
 
@@ -360,7 +323,6 @@ void Redactor::initUI() {
     fileBtn.setAction([this]() { ui.setActiveTile(1, !ui.getActiveTile(1)); });
 	topTile.addButton(fileBtn);
 
-    // 1. Вкладка "File" (верхняя левая часть)
     Tile fileTile(sf::FloatRect({ UI_PADDING, float(TOP_BAR_HEIGHT) }, { 120.f, 95.f }));
     fileTile.setBackground(GuiStyle::PanelBackground);
     fileTile.setOutline(1.f, GuiStyle::PanelBorder);
@@ -381,7 +343,6 @@ void Redactor::initUI() {
 	ui.addTile(topTile);
     ui.addTile(fileTile);
 
-    // 2. Вкладка "Tools" (правая панель)
     float rightX = static_cast<float>(windowWidth) - RIGHT_PANEL_WIDTH;
     Tile toolsTile(sf::FloatRect({ rightX, TOP_BAR_HEIGHT }, { RIGHT_PANEL_WIDTH,
         static_cast<float>(windowHeight) - TOP_BAR_HEIGHT }));
@@ -405,12 +366,10 @@ void Redactor::initUI() {
 
     ui.addTile(toolsTile);
 
-    // По умолчанию активна вкладка Tools (индекс 1)
 	ui.setActiveTile(0, true);
     ui.setActiveTile(2, true);
 }
 
-// ----------------------- Установка режима -----------------------
 void Redactor::setMode(Modes mode) {
     currentMode = mode;
     const wchar_t* modeName = L"None";
@@ -422,7 +381,6 @@ void Redactor::setMode(Modes mode) {
     setStatusText(std::wstring(L"Mode: ") + modeName);
 }
 
-// ----------------------- Главный цикл -----------------------
 void Redactor::run() {
     while (window.isOpen()) {
         handleEvents();
@@ -430,11 +388,9 @@ void Redactor::run() {
     }
 }
 
-// ----------------------- Обработка событий -----------------------
 void Redactor::handleEvents() {
     sf::Vector2i mousePos;
     sf::Vector2f mousePixel;
-    // Обработка событий окна
     while (const auto event = window.pollEvent()) {
         if (event->is<sf::Event::Closed>()) {
             window.close();
@@ -449,15 +405,13 @@ void Redactor::handleEvents() {
                 { viewCenter.x - windowWidth / 2.f / zoom, viewCenter.y - windowHeight / 2.f / zoom },
                 { static_cast<float>(windowWidth) / zoom, static_cast<float>(windowHeight) / zoom }
             ));
-            initUI(); // пересоздаём UI с новыми размерами
+            initUI();
         }
-        // можно обработать колёсико мыши здесь
         if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>()) {
             float factor = (wheel->delta > 0) ? 1.2f : 1.0f / 1.2f;
             zoom = std::clamp(zoom * factor, 0.0f, 16.0f);
             updateView();
         }
-        // Обработка нажатия и释放 мыши
         if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (mouseButton->button == sf::Mouse::Button::Left) {
                 leftMousePressed = true;
@@ -465,8 +419,6 @@ void Redactor::handleEvents() {
                 mousePos = sf::Mouse::getPosition(window);
                 mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
                 pressPosition = mousePixel;
-                
-                // Сбрасываем состояние перетаскивания при новом нажатии
                 isDragging = false;
             }
         }
@@ -480,16 +432,9 @@ void Redactor::handleEvents() {
                     mousePos = sf::Mouse::getPosition(window);
                     mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
                     bool uiContains = ui.contains(mousePixel);
-                    
-                    // Если это короткое нажатие и не по UI
-                    if (pressDuration < DRAG_THRESHOLD && !uiContains && !isDragging) {
-                        // Выполняем действие в соответствии с текущим режимом
-                        handleMapClick(mousePixel);
-                    }
-                    // Если мы были в состоянии перетаскивания, завершаем его
-                    else if (isDragging) {
-                        isDragging = false;
-                    }
+
+                    if (pressDuration < DRAG_THRESHOLD && !uiContains && !isDragging) { handleModeClick(mousePixel); }
+                    else if (isDragging) { isDragging = false; }
                 }
             }
         }
@@ -500,28 +445,19 @@ void Redactor::handleEvents() {
             tempMousePos = mouseWorld;
         }
     }
-
-    // Обновляем состояние мыши для UI
     mousePos = sf::Mouse::getPosition(window);
     mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
     bool mouseClicked = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-    
-    // Обновляем UI
+
     ui.update(mousePixel, mouseClicked);
 
-    // Обработка перетаскивания карты (после длительного нажатия)
     if (leftMousePressed && !ui.contains(mousePixel)) {
         sf::Time currentTime = clickClock.getElapsedTime();
         sf::Time pressDuration = currentTime - pressStartTime;
-        
-        // Если нажатие длительное и мы еще не в состоянии перетаскивания
         if (pressDuration >= DRAG_THRESHOLD && !isDragging) {
             isDragging = true;
-            // Сохраняем центр вида на момент начала перетаскивания
             dragCenter = viewCenter;
         }
-        
-        // Если мы в состоянии перетаскивания, обновляем вид
         if (isDragging) {
             sf::Vector2f current(mousePixel);
             sf::Vector2f delta = pressPosition - current;
@@ -531,30 +467,22 @@ void Redactor::handleEvents() {
     }
 }
 
-// ----------------------- Обработка клика по карте -----------------------
-void Redactor::handleMapClick(const sf::Vector2f& windowPixel) {
-    // Преобразуем координаты окна в координаты вида
+void Redactor::handleModeClick(const sf::Vector2f& windowPixel) {
     sf::Vector2f worldPos = window.mapPixelToCoords(
         sf::Mouse::getPosition(window), redactorView);
-    
-    // Преобразуем мировые координаты в координаты схемы
-    // Предполагаем, что каждый блок составляет 1 единицу, и схема начинается от (0,0,0)
-    // Для простоты используем приближенное преобразование
+
     int schematicX = static_cast<int>(std::floor(worldPos.x));
-    int schematicY = static_cast<int>(std::floor(worldPos.y));
-    int schematicZ = 0; // Упрощение - работаем только с одним Y-уровнем
+    int schematicY = 0;
+    int schematicZ = static_cast<int>(std::floor(worldPos.y));
     
-    // Получаем размеры схемы для проверки границ
+
     sf::Vector3i pos1 = { 0, 0, 0 };
     sf::Vector3i pos2 = schem->getPos2() - schem->getPos1();
-    
-    // Проверяем, что клик находится внутри границ схемы
+
     if (schematicX < pos1.x || schematicX >= pos2.x ||
-        schematicY < pos1.z || schematicY >= pos2.z) {
-        return; // Клик вне схемы
+        schematicZ < pos1.z || schematicZ >= pos2.z) {
+        return;
     }
-    
-    // В зависимости от режима размещаем соответствующий объект
     switch (currentMode) {
     case Modes::AddRectCounters: {
         sf::Vector2f worldPos = window.mapPixelToCoords(
@@ -562,21 +490,18 @@ void Redactor::handleMapClick(const sf::Vector2f& windowPixel) {
         addRectPoint(worldPos);
         break;
     }
+    case Modes::None: {
+
+    }
     case Modes::AddCircleCounters: {
-        // Для простоты размещаем один блок (в реальности круг)
-        schem->setBlock(schematicX, schematicY, schematicZ, 41);
-        setStatusText(L"Placed circular counter at (" + 
-                      std::to_wstring(schematicX) + L", " + 
-                      std::to_wstring(schematicY) + L")");
+        
         break;
     }
     default:
-        // Для остальных режимов ничего не делаем при клике
         break;
     }
 }
 
-// ----------------------- Обновление вида -----------------------
 void Redactor::updateView() {
     float halfWidth = static_cast<float>(windowWidth) / 2.f / zoom;
     float halfHeight = static_cast<float>(windowHeight) / 2.f / zoom;
@@ -586,24 +511,21 @@ void Redactor::updateView() {
     ));
 }
 
-// ----------------------- Отрисовка -----------------------
 void Redactor::draw() {
     tileMap->update(redactorView);
     window.clear(MAP_BACKGROUND_COLOR);
 
     window.setView(redactorView);
 
-	textureManager->draw(window, sf::RenderStates::Default);
+    schematicTexture->draw(window, sf::RenderStates::Default);
 
     tileMap->draw(window, sf::RenderStates::Default);
 
     drawRectPreview(window, redactorView);
 
-    // Рисуем UI поверх карты
     window.setView(uiView);
     ui.draw(window);
 
-    // Статусная строка
     statusText->setString(statusMessage);
     statusText->setPosition(sf::Vector2f(UI_PADDING, static_cast<float>(windowHeight) - 28.f));
     window.draw(*statusText);
@@ -625,7 +547,7 @@ void Redactor::showLoadDialog() {
     if (GetOpenFileNameA(&ofn)) {
         schem->loadFromFile(fileName);
         try {
-            textureManager.emplace(schem.get());
+            schematicTexture.emplace(schem.get(), &textureManager);
         }
         catch (const std::exception& e) {
             statusMessage = L"Error building textures: " + std::wstring(e.what(), e.what() + strlen(e.what()));
