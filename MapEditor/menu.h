@@ -1,11 +1,13 @@
 ﻿#pragma once
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp> 
 #include <string>
-#include <vector>
 #include <functional>
-#include <future>
+#include <vector>
 #include <memory>
+#include <future>
+
+#include "schematic.h"
 
 class SchematicMap;
 
