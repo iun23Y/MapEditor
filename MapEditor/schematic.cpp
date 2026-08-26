@@ -2,6 +2,7 @@
 #include "helper.h"
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -476,20 +477,16 @@ void BlockPalette::addBlock(int id, const std::string& name) {
     nameById[id] = name;
     idByName[name] = id;
 }
-
 bool BlockPalette::hasBlock(int id) const {
     return nameById.find(id) != nameById.end();
 }
-
 bool BlockPalette::hasBlock(const std::string& name) const {
     return idByName.find(name) != idByName.end();
 }
-
 int BlockPalette::getId(const std::string& name) const {
     auto it = idByName.find(name);
     return it == idByName.end() ? -1 : it->second;
 }
-
 std::string BlockPalette::getName(int id) const {
     auto it = nameById.find(id);
     return it == nameById.end() ? "" : it->second;
@@ -519,7 +516,6 @@ void SchematicMap::rebuildRegionDirIndex() const {
     }
     dirIndexValid = true;
 }
-
 std::pair<std::int32_t, std::size_t> readVarint(const std::vector<std::uint8_t>& data, std::size_t offset) {
     std::int32_t result = 0;
     int shift = 0;
@@ -534,7 +530,6 @@ std::pair<std::int32_t, std::size_t> readVarint(const std::vector<std::uint8_t>&
 
     return { result, offset };
 }
-
 std::vector<std::int32_t> decodeBlockIndices(const std::vector<std::uint8_t>& rawData, int expectedCount) {
     std::vector<std::int32_t> result;
     result.reserve(expectedCount);
@@ -555,11 +550,9 @@ std::vector<std::int32_t> decodeBlockIndices(const std::vector<std::uint8_t>& ra
 int SchematicMap::getRegionCoord(int coordinate) {
     return floorRegion(coordinate);
 }
-
 std::string SchematicMap::getRegionName(int regionX, int regionY, int regionZ) {
     return std::to_string(regionX) + "_" + std::to_string(regionY) + "_" + std::to_string(regionZ);
 }
-
 fs::path SchematicMap::getRegionPath(const fs::path& regionsDir, const std::string& regionName) {
     return regionsDir / (regionName + ".region");
 }
@@ -571,6 +564,21 @@ SchematicMap::SchematicMap(const std::string& filename, const std::string& world
     loadMeta();
     if (!filename.empty())
         loadFromFile(filename);
+}
+
+sf::Vector2f SchematicMap::worldToLocal(const sf::Vector2f& worldPos) const {
+    return sf::Vector2f(worldPos.x - static_cast<float>(Pos1.x),
+        worldPos.y - static_cast<float>(Pos1.z));
+}
+sf::Vector2f SchematicMap::localToWorld(const sf::Vector2f& localPos) const {
+    return sf::Vector2f(localPos.x + static_cast<float>(Pos1.x),
+        localPos.y + static_cast<float>(Pos1.z));
+}
+sf::Vector2i SchematicMap::worldToLocal(const sf::Vector2i& worldPos) const {
+    return sf::Vector2i(worldPos.x - Pos1.x, worldPos.y - Pos1.z);
+}
+sf::Vector2i SchematicMap::localToWorld(const sf::Vector2i& localPos) const {
+    return sf::Vector2i(localPos.x + Pos1.x, localPos.y + Pos1.z);
 }
 
 void SchematicMap::loadPalette() {
@@ -591,7 +599,6 @@ void SchematicMap::loadPalette() {
         }
     }
 }
-
 void SchematicMap::savePalette() const {
     std::vector<std::pair<int, std::string>> entries(palette.nameById.begin(), palette.nameById.end());
     std::sort(entries.begin(), entries.end(),
@@ -602,7 +609,6 @@ void SchematicMap::savePalette() const {
     for (const auto& [id, name] : entries)
         out << id << ' ' << name << '\n';
 }
-
 void SchematicMap::loadMeta() {
     struct MetaData {
         int32_t hasBounds;
@@ -621,7 +627,6 @@ void SchematicMap::loadMeta() {
     Pos1 = sf::Vector3i(m.x1, m.y1, m.z1);
     Pos2 = sf::Vector3i(m.x2, m.y2, m.z2);
 }
-
 void SchematicMap::saveMeta() const {
     struct MetaData {
         int32_t hasBounds;
@@ -638,13 +643,11 @@ void SchematicMap::saveMeta() const {
     if (!out) return;
     out.write(reinterpret_cast<const char*>(&m), sizeof(m));
 }
-
 void SchematicMap::saveWorldState() const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     savePalette();
     saveMeta();
 }
-
 void SchematicMap::RegionData::ensureIndex() {
     if (indexed) return;
 
@@ -691,7 +694,6 @@ std::shared_ptr<SchematicMap::RegionData> SchematicMap::getRegionData(int region
     regionCache.emplace(key, data);
     return data;
 }
-
 void SchematicMap::extendBounds(int x, int y, int z) {
     if (!hasBounds) {
         Pos1 = sf::Vector3i(x, y, z);
@@ -889,7 +891,6 @@ std::vector<SchematicMap::RegionBlock> SchematicMap::getRegionBlocks(int regionX
 
     return result;
 }
-
 std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<RegionBlock> result;
@@ -913,7 +914,6 @@ std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(int minX, i
 
     return result;
 }
-
 std::vector<SchematicMap::RegionBlock> SchematicMap::getTopBlocksInArea(int minX, int minZ, int maxX, int maxZ) const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     if (!hasBounds || minX > maxX || minZ > maxZ) return {};
@@ -969,7 +969,6 @@ int SchematicMap::getBlock(int x, int y, int z) const {
     if (idx < 0) return -1;
     return data->blocks[static_cast<std::size_t>(idx)].id;
 }
-
 void SchematicMap::setBlock(int x, int y, int z, int blockId) {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     const int regionX = floorRegion(x);
@@ -1026,7 +1025,6 @@ void SchematicMap::setBlock(int x, int y, int z, int blockId) {
     if (data->blocks.empty())
         knownRegionFiles.erase(key);
 }
-
 void SchematicMap::setBlocks(const std::vector<std::tuple<int, int, int, int>>& blocks) {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     if (blocks.empty()) return;
@@ -1074,12 +1072,10 @@ void SchematicMap::setBlocks(const std::vector<std::tuple<int, int, int, int>>& 
             if (id >= 0) extendBounds(x, y, z);
     }
 }
-
 void SchematicMap::removeBlock(int x, int y, int z) {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     setBlock(x, y, z, -1);
 }
-
 bool SchematicMap::hasBlock(int x, int y, int z) const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     return getBlock(x, y, z) >= 0;
@@ -1261,7 +1257,6 @@ std::unordered_map<sf::Vector3i, int32_t> SchematicMap::loadRegionBlocks(const f
         result[{ b.x, b.y, b.z }] = b.id;
     return result;
 }
-
 void SchematicMap::writeRegionBlocks(const fs::path& filePath, const std::unordered_map<sf::Vector3i, int32_t>& blocks) {
     std::vector<RegionRecord> records;
     records.reserve(blocks.size());
@@ -1269,7 +1264,6 @@ void SchematicMap::writeRegionBlocks(const fs::path& filePath, const std::unorde
         records.push_back({ pos.x, pos.y, pos.z, id });
     writeRegionFile(filePath, records);
 }
-
 void SchematicMap::invalidateRegionCache(int regionX, int regionZ) {
     for (auto it = regionCache.begin(); it != regionCache.end();) {
         if (it->first.x == regionX && it->first.z == regionZ)
@@ -1278,7 +1272,6 @@ void SchematicMap::invalidateRegionCache(int regionX, int regionZ) {
             ++it;
     }
 }
-
 void SchematicMap::clearRegionCache() {
     regionCache.clear();
 }

@@ -93,6 +93,7 @@ private:
         if (!isValidTile(x, y)) return;
         TileKey key{ x, y };
 
+        // 1. Проверяем, не загружается ли уже или не загружен
         {
             std::lock_guard<std::mutex> lock(m_tilesMutex);
             auto it = m_tiles.find(key);
@@ -101,16 +102,19 @@ private:
                 if (it->second.state == TileState::Loading) return;
             }
         }
+
+        // 2. Вычисляем трансформацию (как в вашем синхронном коде)
+        //    Используем стандартный размер тайла 256x256 (все OSM/Google тайлы такие)
         const float TILE_SIZE = 256.f;
 
         auto [lon_min, lat_min] = tileToLonLat(x, y, m_zoom);
         auto [lon_max, lat_max] = tileToLonLat(x + 1, y + 1, m_zoom);
 
-        auto p1 = airocean.fromGeo(lat_min, lon_min);
-        auto p2 = airocean.fromGeo(lat_min, lon_max);
-        auto p3 = airocean.fromGeo(lat_max, lon_min);
+        auto p1 = airocean.fromGeo(lat_min, lon_min); // юго-запад
+        auto p2 = airocean.fromGeo(lat_min, lon_max); // юго-восток
+        auto p3 = airocean.fromGeo(lat_max, lon_min); // северо-запад
 
-        sf::Vector2f worldOrigin(p1[0], p1[1]);
+        sf::Vector2f worldOrigin(p1[0] - m_worldOffset.x, p1[1] - m_worldOffset.y);
         sf::Vector2f worldXVec(p2[0] - p1[0], p2[1] - p1[1]);
         sf::Vector2f worldYVec(p3[0] - p1[0], p3[1] - p1[1]);
 
@@ -185,16 +189,16 @@ private:
         sf::Vector2f center = { rect.position.x + rect.size.x / 2,
                                rect.position.y + rect.size.y / 2 };
 
-        sf::Vector2f worldCenterPos = { center.x, center.y };
+        sf::Vector2f worldCenterPos = { center.x + m_worldOffset.x, center.y + m_worldOffset.y };
         auto geo = airocean.toGeo(worldCenterPos.x, worldCenterPos.y);
         double lon = geo[1];
         double lat = geo[0];
 
         auto [centerX, centerY] = lonLatToTile(lon, lat, m_zoom);
 
-        sf::Vector2f topLeft = { rect.position.x, rect.position.y };
-        sf::Vector2f bottomRight = { rect.position.x + rect.size.x,
-                             rect.position.y + rect.size.y };
+        sf::Vector2f topLeft = { rect.position.x + m_worldOffset.x, rect.position.y + m_worldOffset.y };
+        sf::Vector2f bottomRight = { rect.position.x + rect.size.x + m_worldOffset.x,
+                             rect.position.y + rect.size.y + m_worldOffset.y };
 
         auto geoTL = airocean.toGeo(topLeft.x, topLeft.y);
         auto geoBR = airocean.toGeo(bottomRight.x, bottomRight.y);
@@ -233,12 +237,12 @@ public:
     }
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const {
+        // Если используете многопоточность – раскомментируйте следующую строку:
         std::lock_guard<std::mutex> lock(m_tilesMutex);
 
         for (const auto& pair : m_tiles) {
             const auto& data = pair.second;
-            if (!data.valid || data.texture.getSize() == sf::Vector2u(0, 0))
-                continue;
+            if (!data.valid) continue;
 
             auto [lon_min, lat_min] = tileToLonLat(pair.first.x, pair.first.y, m_zoom);
             auto [lon_max, lat_max] = tileToLonLat(pair.first.x + 1, pair.first.y + 1, m_zoom);
@@ -248,25 +252,51 @@ public:
             auto p3 = airocean.fromGeo(lat_max, lon_min);
             auto p4 = airocean.fromGeo(lat_max, lon_max);
 
-            sf::Vector2u texSize = data.texture.getSize();
-            sf::Vector2f uv1(0.f, static_cast<float>(texSize.y));
-            sf::Vector2f uv2(static_cast<float>(texSize.x), static_cast<float>(texSize.y));
-            sf::Vector2f uv3(0.f, 0.f);
-            sf::Vector2f uv4(static_cast<float>(texSize.x), 0.f);
+            // 3. Подготавливаем массив вершин (6 штук для 2-х треугольников)
+            sf::Vector2u texSize = pair.second.texture.getSize();
+
+            // Координаты текстуры (UV) – отзеркалены по вертикали (Y перевёрнут)
+            sf::Vector2f uv1(0.f, static_cast<float>(texSize.y));   // было (0,0)
+            sf::Vector2f uv2(static_cast<float>(texSize.x), static_cast<float>(texSize.y)); // было (x,0)
+            sf::Vector2f uv3(0.f, 0.f);                             // было (0, texSize.y)
+            sf::Vector2f uv4(static_cast<float>(texSize.x), 0.f);   // было (x, texSize.y)
+
+            // Применяем m_worldOffset к координатам мира
+            sf::Vector2f w1(p1[0] - m_worldOffset.x, p1[1] - m_worldOffset.y); // P1 (ЛН)
+            sf::Vector2f w2(p2[0] - m_worldOffset.x, p2[1] - m_worldOffset.y); // P2 (ПН)
+            sf::Vector2f w3(p3[0] - m_worldOffset.x, p3[1] - m_worldOffset.y); // P3 (ЛВ)
+            sf::Vector2f w4(p4[0] - m_worldOffset.x, p4[1] - m_worldOffset.y); // P4 (ПВ)
 
             sf::VertexArray vertices(sf::PrimitiveType::Triangles, 6);
-            // Порядок: ЛВ, ПВ, ЛН, ПВ, ПН, ЛН
-            vertices[0] = sf::Vertex(sf::Vector2f(p3[0], p3[1]), sf::Color(255, 255, 255, 128), uv1);
-            vertices[1] = sf::Vertex(sf::Vector2f(p4[0], p4[1]), sf::Color(255, 255, 255, 128), uv2);
-            vertices[2] = sf::Vertex(sf::Vector2f(p1[0], p1[1]), sf::Color(255, 255, 255, 128), uv3);
-            vertices[3] = sf::Vertex(sf::Vector2f(p4[0], p4[1]), sf::Color(255, 255, 255, 128), uv2);
-            vertices[4] = sf::Vertex(sf::Vector2f(p2[0], p2[1]), sf::Color(255, 255, 255, 128), uv4);
-            vertices[5] = sf::Vertex(sf::Vector2f(p1[0], p1[1]), sf::Color(255, 255, 255, 128), uv3);
 
-            // Создаём копию states для этого тайла
-            sf::RenderStates localStates = states;
-            localStates.texture = &data.texture;
-            target.draw(vertices, localStates);
+            // Треугольник 1 (ЛВ -> ПВ -> ЛН)
+            vertices[0].position = w3;
+            vertices[0].texCoords = uv1; // (0, texSize.y) – левый верх теперь стал левым низом
+
+            vertices[1].position = w4;
+            vertices[1].texCoords = uv2; // (texSize.x, texSize.y) – правый верх стал правым низом
+
+            vertices[2].position = w1;
+            vertices[2].texCoords = uv3; // (0, 0) – левый низ стал левым верхом
+
+            // Треугольник 2 (ПВ -> ПН -> ЛН)
+            vertices[3].position = w4;
+            vertices[3].texCoords = uv2; // (texSize.x, texSize.y)
+
+            vertices[4].position = w2;
+            vertices[4].texCoords = uv4; // (texSize.x, 0) – правый низ стал правым верхом
+
+            vertices[5].position = w1;
+            vertices[5].texCoords = uv3; // (0, 0)
+
+            sf::Color alphaColor(255, 255, 255, 128); // 128 = 50% прозрачности
+
+            for (int i = 0; i < 6; ++i) {
+                vertices[i].color = alphaColor;
+            }
+
+            states.texture = &pair.second.texture;
+            target.draw(vertices, states);
         }
     }
 

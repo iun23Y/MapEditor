@@ -1,12 +1,11 @@
 #pragma once
 
-#define NOMINMAX   // <-- добавьте перед windows.h
-
 #include <string>
-#include <utility>
-#include <functional>
 #include <windows.h>
+#include <SFML/System/Vector3.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <algorithm>
+#include <vector>
 
 static std::string getExeDirectory() {
     char buffer[MAX_PATH];
@@ -15,6 +14,21 @@ static std::string getExeDirectory() {
     size_t last = path.find_last_of("\\/");
     if (last != std::string::npos) path = path.substr(0, last + 1);
     return path;
+}
+
+namespace std {
+    template<>
+    struct hash<sf::Vector3i> {
+        std::size_t operator()(const sf::Vector3i& v) const noexcept {
+            std::size_t h1 = std::hash<int>{}(v.x);
+            std::size_t h2 = std::hash<int>{}(v.y);
+            std::size_t h3 = std::hash<int>{}(v.z);
+            std::size_t seed = h1;
+            seed ^= h2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= h3 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            return seed;
+        }
+    };
 }
 
 static std::vector<sf::Vector2i> bresenhamLine(int x0, int z0, int x1, int z1) {
