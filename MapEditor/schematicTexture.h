@@ -20,15 +20,11 @@ private:
     SchematicMap* schematic;
     textureManager* textures;
 
-    // --- ТЮН. Меньше regionSize = меньше памяти на регион.
-    //     32 → 512×512 px ≈ 1 МБ на картинку (вместо 16.8 МБ при 128).
     static constexpr int regionSize = 128;
     static constexpr int cacheAddSize = 2;
-    static constexpr int maxSize = 5;          // ±5 регионов = ~320×320 блоков
-
-    // --- Лимиты очередей — главная защита от утечки
-    static constexpr std::size_t MAX_INFLIGHT = 32;   // taskQueue + completedQueue суммарно
-    static constexpr std::size_t MAX_COMPLETED = 8;    // готовых картинок в очереди
+    static constexpr int maxSize = 5;
+    static constexpr std::size_t MAX_INFLIGHT = 32;
+    static constexpr std::size_t MAX_COMPLETED = 8;
 
     std::unordered_map<std::pair<int, int>, sf::Texture, PairHash> regionCache;
     sf::Vector2i cachedMinRegion = { 0, 0 };
@@ -41,16 +37,16 @@ private:
     };
     struct RegionResult { int rx, rz; sf::Image image; };
 
-    std::priority_queue<RegionTask>  taskQueue;
-    std::deque<RegionResult>        completedQueue;
+    std::priority_queue<RegionTask> taskQueue;
+    std::deque<RegionResult> completedQueue;
     std::unordered_set<std::pair<int, int>, PairHash> pendingTasks;
 
-    std::mutex              queueMutex;
-    std::condition_variable queueCV;     // будит worker'ов, когда появилась задача
-    std::condition_variable notFullCV;   // будит worker'ов, когда освободилось место
+    std::mutex queueMutex;
+    std::condition_variable queueCV;
+    std::condition_variable notFullCV;
 
     std::vector<std::thread> workers;
-    std::atomic<bool>        stopWorkers{ false };   // atomic: читаем без лока
+    std::atomic<bool> stopWorkers{ false };
 
     bool isRegionInsideSchematic(int rx, int rz);
     void processCompletedUploads();

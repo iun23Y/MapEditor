@@ -22,7 +22,7 @@ void schematicTexture::processCompletedUploads() {
             if (completedQueue.empty()) return;
             result = std::move(completedQueue.front());
             completedQueue.pop_front();
-            notFullCV.notify_one();          // место освободилось Ч будим worker'а
+            notFullCV.notify_one();
         }
         sf::Texture texture;
         if (!texture.loadFromImage(result.image))
@@ -40,7 +40,7 @@ void schematicTexture::workerThread() {
                 return stopWorkers.load() || !taskQueue.empty();
                 });
             if (stopWorkers.load() && taskQueue.empty()) return;
-            if (stopWorkers.load()) return;           // выходим сразу, не дообрабатыва€
+            if (stopWorkers.load()) return;
             task = taskQueue.top();
             taskQueue.pop();
         }
@@ -67,7 +67,7 @@ void schematicTexture::workerThread() {
                     return;
                 }
                 completedQueue.push_back(std::move(result));
-                pendingTasks.erase({ task.rx, task.rz });   // сн€ть с "в работе"
+                pendingTasks.erase({ task.rx, task.rz });
             }
         }
         catch (const std::exception& e) {
@@ -86,8 +86,6 @@ void schematicTexture::enqueueRegion(int rx, int rz, int centerRx, int centerRz)
     const std::pair<int, int> key{ rx, rz };
     if (pendingTasks.contains(key)) return;
 
-    // Ќе enqueue'ить, если в полЄте уже много Ч иначе на старте улетает 400 задач сразу.
-    // Ќа следующем кадре часть завершитс€ и эти регионы попадут в очередь.
     const std::size_t inFlight = taskQueue.size() + completedQueue.size();
     if (inFlight >= MAX_INFLIGHT) return;
 
@@ -108,7 +106,7 @@ sf::Image schematicTexture::generateRegionImage(int rx, int rz) {
         rz + regionSize - 1);
 
     for (const auto& b : blocks) {
-        if (stopWorkers.load(std::memory_order_relaxed))  // ранний выход
+        if (stopWorkers.load(std::memory_order_relaxed))
             return regionImage;
 
         const int lx = b.x - rx, lz = b.z - rz;
@@ -145,10 +143,13 @@ void schematicTexture::updateCache(const sf::View& view) {
     sf::Vector2f center = view.getCenter();
     sf::Vector2f size = view.getSize();
 
-    const float left = center.x - size.x / 2.f;
-    const float top = center.y - size.y / 2.f;
-    const float right = center.x + size.x / 2.f;
-    const float bottom = center.y + size.y / 2.f;
+    sf::Vector3i offset3d = schematic->getPos1();
+    sf::Vector2f offset = { static_cast<float>(offset3d.x), static_cast<float>(offset3d.z) };
+
+    const float left = center.x - size.x / 2.f + offset.x;
+    const float top = center.y - size.y / 2.f + offset.y;
+    const float right = center.x + size.x / 2.f + offset.x;
+    const float bottom = center.y + size.y / 2.f + offset.y;
 
     int minRx = static_cast<int>(std::floor(left / regionSize)) * regionSize;
     int minRz = static_cast<int>(std::floor(top / regionSize)) * regionSize;
@@ -160,16 +161,14 @@ void schematicTexture::updateCache(const sf::View& view) {
     maxRx += cacheAddSize * regionSize;
     maxRz += cacheAddSize * regionSize;
 
-    const int centerRx = static_cast<int>(std::round(center.x / regionSize)) * regionSize;
-    const int centerRz = static_cast<int>(std::round(center.y / regionSize)) * regionSize;
+    const int centerRx = static_cast<int>(std::round((center.x + offset.x) / regionSize)) * regionSize;
+    const int centerRz = static_cast<int>(std::round((center.y + offset.y) / regionSize)) * regionSize;
 
     minRx = std::max(minRx, centerRx - maxSize * regionSize);
     minRz = std::max(minRz, centerRz - maxSize * regionSize);
     maxRx = std::min(maxRx, centerRx + maxSize * regionSize);
     maxRz = std::min(maxRz, centerRz + maxSize * regionSize);
 
-    // –аньше тут был ранний return Ч из-за этого removeOutdatedRegions не вызывалс€,
-    // пока границы не сдвинутс€. “еперь выполн€ем каждый кадр (дЄшево).
     for (int rx = minRx; rx < maxRx; rx += regionSize) {
         for (int rz = minRz; rz < maxRz; rz += regionSize) {
             if (isRegionCached(rx, rz)) continue;
@@ -195,7 +194,7 @@ schematicTexture::~schematicTexture() {
         stopWorkers = true;
     }
     queueCV.notify_all();
-    notFullCV.notify_all();   // разбудить тех, кто ждЄт места в completedQueue
+    notFullCV.notify_all();
     for (auto& worker : workers)
         if (worker.joinable()) worker.join();
 }
@@ -207,8 +206,9 @@ void schematicTexture::draw(sf::RenderTarget& target, sf::RenderStates states) {
 
     for (const auto& [key, texture] : regionCache) {
         sf::Sprite sprite(texture);
-        sprite.setPosition({ static_cast<float>(key.first),
-                              static_cast<float>(key.second) });
+		sf::Vector2f position(static_cast<float>(key.first), static_cast<float>(key.second));
+
+        sprite.setPosition(schematic->worldToLocal(position));
         sprite.setScale({ 1.f / 16.f, 1.f / 16.f });
         target.draw(sprite, states);
     }

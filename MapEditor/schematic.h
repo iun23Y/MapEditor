@@ -27,21 +27,6 @@ struct BlockPalette {
     std::string getName(int id) const;
 };
 
-namespace std {
-    template<>
-    struct hash<sf::Vector3i> {
-        std::size_t operator()(const sf::Vector3i& v) const noexcept {
-            std::size_t h1 = std::hash<int>{}(v.x);
-            std::size_t h2 = std::hash<int>{}(v.y);
-            std::size_t h3 = std::hash<int>{}(v.z);
-            std::size_t seed = h1;
-            seed ^= h2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            seed ^= h3 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            return seed;
-        }
-    };
-}
-
 class SchematicMap {
 public:
     static constexpr int REGION_SIZE = 1000;
@@ -126,6 +111,11 @@ public:
     void loadFromFile(const std::string& filename);
     void exportToSchematic(const std::string& baseName, const std::string& outputDir) const;
     void saveWorldState() const;
+
+    sf::Vector2f worldToLocal(const sf::Vector2f& worldPos) const;
+    sf::Vector2f localToWorld(const sf::Vector2f& localPos) const;
+    sf::Vector2i worldToLocal(const sf::Vector2i& worldPos) const;
+    sf::Vector2i localToWorld(const sf::Vector2i& localPos) const;
 
     int getBlock(int x, int y, int z) const;
     void setBlock(int x, int y, int z, int blockId);

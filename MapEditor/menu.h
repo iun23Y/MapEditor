@@ -1,13 +1,11 @@
 ﻿#pragma once
 
-#include <SFML/Graphics.hpp> 
+#include <SFML/Graphics.hpp>
 #include <string>
-#include <functional>
 #include <vector>
-#include <memory>
+#include <functional>
 #include <future>
-
-#include "schematic.h"
+#include <memory>
 
 class SchematicMap;
 
@@ -50,7 +48,7 @@ private:
     } settings;
 
     // Version constants
-    const std::wstring PROGRAM_VERSION = L"1.1.0";
+    const std::wstring PROGRAM_VERSION = L"2.0.0";
     const std::wstring MC_VERSION = L"1.12.2 - 1.21.4";
 
     bool isLoading = false;
