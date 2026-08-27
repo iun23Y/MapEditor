@@ -768,6 +768,7 @@ void SchematicMap::loadFromFile(const std::string& filename) {
         auto pal = std::dynamic_pointer_cast<TagCompound>(paletteIt->second);
         for (const auto& [name, tag] : pal->children) {
             if (tag->type != TagType::TAG_INT) continue;
+            if (name == "minecraft:__reserved__") continue;
 
             const int schematicId = std::dynamic_pointer_cast<TagInt>(tag)->value;
             int worldId;
@@ -828,7 +829,7 @@ void SchematicMap::loadFromFile(const std::string& filename) {
 
     std::unordered_set<int> ignored;
     for (const auto& [id, name] : palette.nameById)
-        if (name == "minecraft:air" || name == "air" || name == "___reserved___" || name == "void")
+        if (name == "minecraft:air" || name == "air" || name == "minecraft:__reserved__" || name == "__reserved__")
             ignored.insert(id);
 
     fs::path regionsDir = worldPath / "regions";
@@ -1111,6 +1112,14 @@ void SchematicMap::exportToSchematic(const std::string& baseName, const std::str
         return t;
         };
 
+    auto makeShort = [](const std::string& name, std::int16_t value) {
+        auto t = std::make_shared<TagShort>();
+        t->type = TagType::TAG_SHORT;
+        t->name = name;
+        t->value = value;
+        return t;
+        };
+
     for (int ix = 0; ix < cellsX; ++ix) {
         for (int iz = 0; iz < cellsZ; ++iz) {
             const int minX = worldMinX + ix * CELL_SIZE;
@@ -1178,9 +1187,9 @@ void SchematicMap::exportToSchematic(const std::string& baseName, const std::str
 
             schem->children["Version"] = makeInt("Version", 3);
             schem->children["DataVersion"] = makeInt("DataVersion", 3700);
-            schem->children["Width"] = makeInt("Width", width);
-            schem->children["Height"] = makeInt("Height", height);
-            schem->children["Length"] = makeInt("Length", length);
+            schem->children["Width"] = makeShort("Width", width);
+            schem->children["Height"] = makeShort("Height", height);
+            schem->children["Length"] = makeShort("Length", length);
 
             auto offset = std::make_shared<TagIntArray>();
             offset->type = TagType::TAG_INT_ARRAY;

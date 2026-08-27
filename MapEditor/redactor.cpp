@@ -43,7 +43,7 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
     }
 
     try {
-        tileMap.emplace(17, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
+        tileMap.emplace(19, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
         tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize tile map: " << e.what() << std::endl;
@@ -59,9 +59,11 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
 
     // Initialize mouse interaction state
     leftMousePressed = false;
-    isDragging = false;
+    isDraggingMap = false;
+    isDraggingCounter = false;
+    lastMouseWorld = {0.f, 0.f};
 
-    initUI();   // <-- инициализируем новый интерфейс
+    initUI();
 
     // Компиляция шейдера для теней
     std::string shaderCode = R"(
@@ -212,6 +214,21 @@ void Redactor::initUI() {
     ui.setActiveTile(2, true);
 }
 
+int Redactor::findCounterAt(const sf::Vector2f& worldPos) const {
+    const float threshold = 1.5f;
+    for (std::size_t i = 0; i < counters.size(); ++i) {
+        auto border = counters[i]->buildBorder();
+        for (const auto& p : border) {
+            float dx = worldPos.x - static_cast<float>(p.x);
+            float dy = worldPos.y - static_cast<float>(p.y);
+            if (dx * dx + dy * dy <= threshold * threshold) {
+                return static_cast<int>(i);
+            }
+        }
+    }
+    return -1;
+}
+
 void Redactor::setMode(Modes mode) {
     currentMode = mode;
     currentCounter.reset(); // сбрасываем старый
@@ -247,8 +264,7 @@ void Redactor::run() {
 void Redactor::handleEvents() {
     sf::Vector2i mousePos;
     sf::Vector2f mousePixel;
-    
-    // Обработка событий окна
+
     while (const auto event = window.pollEvent()) {
         if (event->is<sf::Event::Closed>()) {
             window.close();
@@ -263,15 +279,13 @@ void Redactor::handleEvents() {
                 { viewCenter.x - windowWidth / 2.f / zoom, viewCenter.y - windowHeight / 2.f / zoom },
                 { static_cast<float>(windowWidth) / zoom, static_cast<float>(windowHeight) / zoom }
             ));
-            initUI(); // пересоздаём UI с новыми размерами
+            initUI();
         }
-        // можно обработать колёсико мыши здесь
         if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>()) {
             float factor = (wheel->delta > 0) ? 1.2f : 1.0f / 1.2f;
             zoom = std::clamp(zoom * factor, 0.0f, 16.0f);
             updateView();
         }
-        // Обработка нажатия и释放 мыши
         if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (mouseButton->button == sf::Mouse::Button::Left) {
                 leftMousePressed = true;
@@ -279,28 +293,59 @@ void Redactor::handleEvents() {
                 mousePos = sf::Mouse::getPosition(window);
                 mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
                 pressPosition = mousePixel;
-                
-                // Сбрасываем состояние перетаскивания при новом нажатии
-                isDragging = false;
+                if (currentMode != Modes::None) {
+                    if (selectedCounterIndex < counters.size())
+                        counters[selectedCounterIndex]->setSelected(false);
+                    selectedCounterIndex = std::numeric_limits<std::size_t>::max();
+                    isDraggingCounter = false;
+                }
+                else {
+                    sf::Vector2f worldPos = window.mapPixelToCoords(sf::Vector2i(mousePos), redactorView);
+                    int idx = findCounterAt(worldPos);
+                    if (idx >= 0) {
+                        draggingCounterIndex = static_cast<std::size_t>(idx);
+                        isDraggingCounter = true;
+                        dragCounterStartWorld = worldPos;
+                        dragStartPoints = counters[idx]->getPoints();
+
+                        counters[idx]->removePlacedBlocks(&*schemTexture);
+
+                        for (auto& c : counters) c->setSelected(false);
+                        counters[idx]->setSelected(true);
+                        setStatusText(L"Перетаскивание контура...");
+                    }
+                    else {
+                        for (auto& c : counters) c->setSelected(false);
+                        selectedCounterIndex = std::numeric_limits<std::size_t>::max();
+                        isDraggingCounter = false;
+                    }
+                    isDragging = false;
+                }
             }
         }
         if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonReleased>()) {
+            mouseClicked = true;
             if (mouseButton->button == sf::Mouse::Button::Left) {
                 if (leftMousePressed) {
                     leftMousePressed = false;
                     sf::Time releaseTime = clickClock.getElapsedTime();
                     sf::Time pressDuration = releaseTime - pressStartTime;
-                    
+
                     mousePos = sf::Mouse::getPosition(window);
                     mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
                     bool uiContains = ui.contains(mousePixel);
-                    
-                    // Если это короткое нажатие и не по UI
-                    if (pressDuration < DRAG_THRESHOLD && !uiContains && !isDragging) {
-                        // Выполняем действие в соответствии с текущим режимом
+
+                    if (isDraggingCounter && draggingCounterIndex < counters.size()) {
+                        counters[draggingCounterIndex]->buildCounter(&*schemTexture);
+                        counters[draggingCounterIndex]->setSelected(false);
+                        setStatusText(L"Контур перемещён.");
+
+                        isDraggingCounter = false;
+                        draggingCounterIndex = std::numeric_limits<std::size_t>::max();
+                    }
+                    else if (pressDuration < DRAG_THRESHOLD && !uiContains && !isDragging) {
                         handleMapClick(mousePixel);
                     }
-                    // Если мы были в состоянии перетаскивания, завершаем его
                     else if (isDragging) {
                         isDragging = false;
                     }
@@ -316,24 +361,45 @@ void Redactor::handleEvents() {
                     setStatusText(L"Полигон завершён и построен.");
                 }
             }
+            if (keyPressed->code == sf::Keyboard::Key::Escape) {
+                if (currentMode == Modes::AddRectCounters ||
+                    currentMode == Modes::AddPolygonCounters ||
+                    currentMode == Modes::AddCircleCounters)
+                {
+                    if (currentCounter && !currentCounter->getPoints().empty()) {
+                        currentCounter.reset();
+                        setStatusText(L"Текущее построение отменено.");
+                    }
+
+                    if (!counters.empty()) {
+                        counters.back()->removePlacedBlocks(&*schemTexture);
+                        counters.pop_back();
+                        setStatusText(L"Последний контур удалён.");
+                    }
+                }
+            }
         }
         if (const auto* moved = event->getIf<sf::Event::MouseMoved>()) {
             sf::Vector2f mouseWorld = window.mapPixelToCoords(
                 sf::Vector2i(moved->position.x, moved->position.y), redactorView);
             tempMousePos = mouseWorld;
+
+            if (isDraggingCounter && draggingCounterIndex < counters.size()) {
+                sf::Vector2f delta = mouseWorld - dragCounterStartWorld;
+                if (delta.x != 0.f || delta.y != 0.f) {
+                    counters[draggingCounterIndex]->move(delta);
+                    dragCounterStartWorld = mouseWorld;
+                }
+            }
         }
     }
-
-    // Обновляем состояние мыши для UI
     mousePos = sf::Mouse::getPosition(window);
     mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
-    bool mouseClicked = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-    
-    // Обновляем UI
+
     ui.update(mousePixel, mouseClicked);
 
-    // Обработка перетаскивания карты (после длительного нажатия)
-    if (leftMousePressed && !ui.contains(mousePixel)) {
+    mouseClicked = false;
+    if (leftMousePressed && !ui.contains(mousePixel) && !isDraggingCounter) {
         sf::Time currentTime = clickClock.getElapsedTime();
         sf::Time pressDuration = currentTime - pressStartTime;
         
@@ -398,14 +464,18 @@ void Redactor::updateView() {
 }
 
 void Redactor::draw() {
-    tileMap->update(redactorView);
+    if (tileMap) {
+        tileMap->update(redactorView);
+    }
     window.clear(MAP_BACKGROUND_COLOR);
 
     window.setView(redactorView);
 
 	schemTexture->draw(window, sf::RenderStates::Default);
-   
-    tileMap->draw(window, sf::RenderStates::Default);
+
+    if (tileMap) {
+        tileMap->draw(window, sf::RenderStates::Default);
+    }
 
     for (auto& c : counters) {
         c->drawLinePreview(window);

@@ -284,12 +284,12 @@ public:
             vertices[3].texCoords = uv2; // (texSize.x, texSize.y)
 
             vertices[4].position = w2;
-            vertices[4].texCoords = uv4; // (texSize.x, 0) – правый низ стал правым верхом
+            vertices[4].texCoords = uv4;
 
             vertices[5].position = w1;
-            vertices[5].texCoords = uv3; // (0, 0)
+            vertices[5].texCoords = uv3;
 
-            sf::Color alphaColor(255, 255, 255, 128); // 128 = 50% прозрачности
+            sf::Color alphaColor(255, 255, 255, 185);
 
             for (int i = 0; i < 6; ++i) {
                 vertices[i].color = alphaColor;

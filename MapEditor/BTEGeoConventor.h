@@ -119,60 +119,90 @@ namespace BTEGeoConventor {
         }
 
         inline std::vector<std::vector<double>> load_conformal_data() {
-            std::string conformal_file = getExeDirectory() + "conformal.txt";
+            // Try multiple possible locations for conformal.txt
+            std::vector<std::string> paths;
+            paths.push_back(getExeDirectory() + "conformal.txt");
+            paths.push_back(getExeDirectory() + "..\\conformal.txt");
+            paths.push_back(getExeDirectory() + "..\\..\\conformal.txt");
+            // Also try the same for conformal.bin? but we only need txt
 
-            if (!std::filesystem::exists(conformal_file)) {
-                throw std::runtime_error("Required conformal correction file not found: " + conformal_file);
-            }
-
-            try {
-                std::ifstream file(conformal_file);
-                if (!file.is_open()) {
-                    throw std::runtime_error("Could not open file: " + conformal_file);
+            std::string last_error;
+            for (const auto& conformal_file : paths) {
+                if (!std::filesystem::exists(conformal_file)) {
+                    continue;
                 }
 
-                std::stringstream buffer;
-                buffer << file.rdbuf();
-                std::string content = buffer.str();
-                file.close();
-
-                content.erase(0, content.find_first_not_of(" \t\n\r"));
-                content.erase(content.find_last_not_of(" \t\n\r") + 1);
-
-                if (content.find("[[") == 0 || content.find("[") == 0) {
-                    nlohmann::json data = nlohmann::json::parse(content);
-
-                    std::vector<std::vector<double>> result;
-                    for (const auto& item : data) {
-                        if (item.is_array() && item.size() >= 2) {
-                            result.push_back({ item[0].get<double>(), item[1].get<double>() });
-                        }
-                    }
-
-                    return result;
-                }
                 try {
-                    std::string decoded = base64_decode_cryptopp(content);
+                    std::ifstream file(conformal_file);
+                    if (!file.is_open()) {
+                        throw std::runtime_error("Could not open file: " + conformal_file);
+                    }
 
-                    nlohmann::json data = nlohmann::json::parse(decoded);
+                    std::stringstream buffer;
+                    buffer << file.rdbuf();
+                    std::string content = buffer.str();
+                    file.close();
 
-                    std::vector<std::vector<double>> result;
-                    for (const auto& item : data) {
-                        if (item.is_array() && item.size() >= 2) {
-                            result.push_back({ item[0].get<double>(), item[1].get<double>() });
+                    content.erase(0, content.find_first_not_of(" \t\n\r"));
+                    content.erase(content.find_last_not_of(" \t\n\r") + 1);
+
+                    if (content.find("[[") == 0 || content.find("[") == 0) {
+                        try {
+                            nlohmann::json data = nlohmann::json::parse(content);
+                            std::vector<std::vector<double>> result;
+                            for (const auto& item : data) {
+                                if (item.is_array() && item.size() >= 2) {
+                                    result.push_back({ item[0].get<double>(), item[1].get<double>() });
+                                }
+                            }
+                            return result;
+                        }
+                        catch (const nlohmann::json::parse_error& ex) {
+                            last_error = "Failed to parse JSON in " + conformal_file + ": " + std::string(ex.what()) +
+                                ". Possible missing comma between elements.";
+                        }
+                        catch (const std::exception& ex) {
+                            last_error = "Failed to load conformal data from " + conformal_file + ": " + std::string(ex.what());
+                        }
+                    }
+                    else {
+                        try {
+                            std::string decoded = base64_decode_cryptopp(content);
+                            try {
+                                nlohmann::json data = nlohmann::json::parse(decoded);
+                                std::vector<std::vector<double>> result;
+                                for (const auto& item : data) {
+                                    if (item.is_array() && item.size() >= 2) {
+                                        result.push_back({ item[0].get<double>(), item[1].get<double>() });
+                                    }
+                                }
+                                return result;
+                            }
+                            catch (const nlohmann::json::parse_error& ex) {
+                                last_error = "Failed to parse base64-decoded JSON in " + conformal_file + ": " + std::string(ex.what()) +
+                                    ". Possible missing comma between elements.";
+                            }
+                            catch (const std::exception& ex) {
+                                last_error = "Failed to load conformal data from " + conformal_file + ": " + std::string(ex.what());
+                            }
+                        }
+                        catch (const std::exception& decode_error) {
+                            last_error = "Could not decode base64 conformal data from " + conformal_file + ": " + std::string(decode_error.what());
                         }
                     }
 
-                    return result;
-
                 }
-                catch (const std::exception& decode_error) {
-                    throw std::runtime_error("Could not decode base64 conformal data: " + std::string(decode_error.what()));
+                catch (const std::exception& e) {
+                    last_error = "Failed to load conformal data from " + conformal_file + ": " + e.what();
+                    // continue trying other paths
                 }
-
             }
-            catch (const std::exception& e) {
-                throw std::runtime_error("Failed to load conformal data from " + conformal_file + ": " + e.what());
+
+            // If none succeeded, throw an error with the last attempted path
+            if (!paths.empty()) {
+                throw std::runtime_error("Failed to load conformal data from any location. Last error: " + last_error);
+            } else {
+                throw std::runtime_error("No paths to check for conformal.txt");
             }
         }
 
@@ -216,18 +246,18 @@ namespace BTEGeoConventor {
         };
         class ProjectionTransform : public GeographicProjection {
         protected:
-            base::GeographicProjection& input;  // Используем указатель
+            base::GeographicProjection& input;  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
         public:
-            // Конструктор
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             ProjectionTransform(base::GeographicProjection& in)
                 : input(in) {
             }
 
-            // Виртуальный деструктор
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             virtual ~ProjectionTransform() = default;
 
-            // Реализации виртуальных методов
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             virtual bool upright() const {
                 return input.upright();
             }
@@ -240,7 +270,7 @@ namespace BTEGeoConventor {
                 return input.metersPerUnit();
             }
 
-            // Добавьте также эти методы, если они используются
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             virtual std::array<double, 2> toGeo(double x, double y) {
                 return input.toGeo(x, y);
             }
@@ -382,33 +412,33 @@ namespace BTEGeoConventor {
                                                    {{0.0, 0.0, 0.0}}} };
                 }
 
-                // Основной цикл
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                 for (size_t i = 0; i < NUM_FACES; ++i) {
-                    // Получаем вершины треугольника
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     auto a = _cart(VERT[ISO[i][0]][0], VERT[ISO[i][0]][1]);
                     auto b = _cart(VERT[ISO[i][1]][0], VERT[ISO[i][1]][1]);
                     auto c = _cart(VERT[ISO[i][2]][0], VERT[ISO[i][2]][1]);
 
-                    // Вычисляем сумму координат
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     double x_sum = a[0] + b[0] + c[0];
                     double y_sum = a[1] + b[1] + c[1];
                     double z_sum = a[2] + b[2] + c[2];
 
-                    // Нормализуем (магнитуда)
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
                     double mag = std::sqrt(x_sum * x_sum + y_sum * y_sum + z_sum * z_sum);
 
                     CENTROID[i][0] = x_sum / mag;
                     CENTROID[i][1] = y_sum / mag;
                     CENTROID[i][2] = z_sum / mag;
 
-                    // Вычисляем углы поворота
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     double c_lon = std::atan2(y_sum, x_sum);
                     double c_lat = std::atan2(std::sqrt(x_sum * x_sum + y_sum * y_sum), z_sum);
 
-                    // Поворачиваем первую вершину для определения финального поворота
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     auto v = _y_rot(VERT[ISO[i][0]][0] - c_lon, VERT[ISO[i][0]][1], -c_lat);
 
-                    // Создаём матрицы поворота
+                    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     _produce_zyz_rotation_matrix(ROTATION_MATRIX[i], -c_lon, -c_lat, (PI / 2.0) - v[0]);
                     _produce_zyz_rotation_matrix(INVERSE_ROTATION_MATRIX[i], v[0] - (PI / 2.0), c_lat, c_lon);
                 }

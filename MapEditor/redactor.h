@@ -47,12 +47,21 @@ private:
     };
 
     bool leftMousePressed = false;
+    bool mouseClicked = false;
     sf::Time pressStartTime;
     sf::Vector2f pressPosition;
     bool isDragging = false;
+    bool isDraggingMap = false;
+    bool isDraggingCounter = false;
+    std::size_t draggingCounterIndex = std::numeric_limits<std::size_t>::max();
+    sf::Vector2f dragCounterStartWorld;
+    std::vector<sf::Vector2f> dragStartPoints;
+    sf::Vector2f lastMouseWorld;
+    
     static constexpr sf::Time DRAG_THRESHOLD = sf::milliseconds(300);
     sf::Clock clickClock;
 
+    int findCounterAt(const sf::Vector2f& worldPos) const;
     void handleMapClick(const sf::Vector2f& windowPixel);
     BuildResult buildTexturesImages();
     void updateView();
@@ -77,6 +86,7 @@ private:
     sf::Vector2f dragStart;
     sf::Vector2f dragCenter;
     bool dragging = false;
+    std::size_t selectedCounterIndex = std::numeric_limits<std::size_t>::max();
     std::unique_ptr<sf::Text> statusText;
     std::unique_ptr<sf::Text> infoText;
     sf::Font font;
