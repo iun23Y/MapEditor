@@ -43,6 +43,7 @@ int runApplication() {
         return 1;
     }
 }
+
 #ifdef _DEBUG
 int main() { return runApplication(); }
 #else

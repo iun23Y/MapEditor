@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "GuiManager.h"
+
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
@@ -15,29 +17,22 @@ public:
     void run();
 
 private:
-    // Button structure
-    struct Button {
-        sf::FloatRect rect;
-        std::wstring label;
-        std::function<void()> action;
-        sf::Color color;
-        sf::Color hoverColor;
-        bool hovered = false;
-    };
 
     void handleEvents();
     void update();
     void draw();
     void loadSettings();
-    void saveSettings() const;
-    void showLoadDialog();   // file open dialog (Windows)
-    void showInfoDialog();   // version info window
+    void showLoadDialog();
+    void showInfoDialog();
     void startLoad(const std::string& path);
     void processLoad();
 
     sf::RenderWindow window;
-    sf::Font font;
-    std::vector<Button> buttons;
+    GuiManager ui;
+
+	sf::Image imageIcon;
+	sf::Texture iconTexture;
+    sf::Texture backGround;
 
     // Settings
     struct Settings {

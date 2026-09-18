@@ -1,4 +1,4 @@
-#include "redactor.h"
+﻿#include "redactor.h"
 #include "schematic.h"
 #include "GuiManager.h"
 #include "helper.h"
@@ -8,7 +8,6 @@
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
 #include <windows.h>
 #include <shlobj.h>
 #include <shellapi.h>
@@ -38,10 +37,10 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
     window(sf::VideoMode({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }),
         L"Schematic Redactor", sf::Style::Default) {
     window.setFramerateLimit(60);
-    if (!font.openFromFile(getExeDirectory() + "Benbow Regular.ttf")) {
-        (void)font.openFromFile("C:/Windows/Fonts/arial.ttf");
-    }
-
+    sf::Image imageIcon;
+    if (imageIcon.loadFromFile(getExeDirectory() + "Resources\\Image\\Icon\\icon.png"));
+    window.setIcon(imageIcon);
+    
     try {
         tileMap.emplace(19, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
         tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
@@ -129,82 +128,73 @@ void main() {
     gl_FragColor = vec4(shadedColor, alpha);
 }
 )";
-    statusText = std::make_unique<sf::Text>(font, L"Loading map...", 14);
-    statusText->setFillColor(GuiStyle::TextColor);
 }
 
 void Redactor::initUI() {
-    // Загружаем шрифт для UI, если ещё не загружен
-    if (ui.getFont().getInfo().family.empty()) {
-        ui.loadFont(getExeDirectory() + "Benbow Regular.ttf");
-    }
-
-    // Очищаем существующие плитки вместо полной пересоздания
-    // Для простоты оставляем пересоздание, но в будущем можно оптимизировать
     ui = GuiManager();
-    if (!ui.loadFont(getExeDirectory() + "Benbow Regular.ttf")) {
-        // Fallback to Arial if Benbow not found
+    if (!ui.loadFont(getExeDirectory() + "Resources\\Fonts\\Deledda Closed Regular.ttf")) {
         ui.loadFont("C:/Windows/Fonts/arial.ttf");
     }
+
+    statusText = std::make_unique<sf::Text>(ui.getFont(), L"Loading map...", 14);
+    statusText->setFillColor(GuiStyle::TextColor);
 
     Tile topTile(sf::FloatRect({ 0.f, 0.f }, { float(windowWidth), float(TOP_BAR_HEIGHT) }));
     topTile.setBackground(GuiStyle::PanelBackground);
     topTile.setOutline(1.f, GuiStyle::PanelBorder);
     
-	Button fileBtn(sf::FloatRect({ UI_PADDING, 4.f }, { 100.f, 25.f }), L"File", ui.getFont());
+	Button fileBtn(sf::FloatRect({ UI_PADDING, 4.f }, { 100.f, 25.f }), L"файл", ui.getFont());
     fileBtn.setAction([this]() { ui.setActiveTile(1, !ui.getActiveTile(1)); });
 	topTile.addButton(fileBtn);
 
-    // 1. Вкладка "File" (верхняя левая часть)
     Tile fileTile(sf::FloatRect({ UI_PADDING, float(TOP_BAR_HEIGHT) }, { 120.f, 95.f }));
     fileTile.setBackground(GuiStyle::PanelBackground);
     fileTile.setOutline(1.f, GuiStyle::PanelBorder);
 
-    Button loadBtn(sf::FloatRect({ 22.f, 35.f }, { 100.f, 25.f }), L"Load", ui.getFont());
+    Button loadBtn(sf::FloatRect({ 22.f, 35.f }, { 100.f, 25.f }), L"загрузить", ui.getFont());
     loadBtn.setAction([this]() { showLoadDialog(); });
     fileTile.addButton(loadBtn);
 
-    Button saveBtn(sf::FloatRect({ 22.f, 65.f }, { 100.f, 25.f }), L"Save", ui.getFont(),
+    Button saveBtn(sf::FloatRect({ 22.f, 65.f }, { 100.f, 25.f }), L"выгрузить", ui.getFont(),
         sf::Color(100, 100, 120), sf::Color(50, 150, 255));
     saveBtn.setAction([this]() { schem->exportToSchematic("Leningradskaya", "C:/MySchematics"); });
     fileTile.addButton(saveBtn);
 
-    Button exitBtn(sf::FloatRect({ 22.f, 95.f }, { 100.f, 25.f }), L"Exit", ui.getFont());
+    Button exitBtn(sf::FloatRect({ 22.f, 95.f }, { 100.f, 25.f }), L"выйти", ui.getFont());
     exitBtn.setAction([this]() { window.close(); });
     fileTile.addButton(exitBtn);
 
 	ui.addTile(topTile);
     ui.addTile(fileTile);
 
-    // 2. Вкладка "Tools" (правая панель)
     float rightX = static_cast<float>(windowWidth) - RIGHT_PANEL_WIDTH;
-    Tile toolsTile(sf::FloatRect({ rightX, TOP_BAR_HEIGHT }, { RIGHT_PANEL_WIDTH,
+    Tile toolsTile(sf::FloatRect({ rightX, TOP_BAR_HEIGHT + 1.1f }, { RIGHT_PANEL_WIDTH,
         static_cast<float>(windowHeight) - TOP_BAR_HEIGHT }));
     toolsTile.setBackground(GuiStyle::PanelBackground);
     toolsTile.setOutline(1.f, GuiStyle::PanelBorder);
 
     Button toolSelect(sf::FloatRect({ windowWidth - RIGHT_PANEL_WIDTH + UI_PADDING, 35.f }, { RIGHT_PANEL_WIDTH - UI_PADDING * 2, 25.f }),
-		L"Select", ui.getFont());
+		L"выделить", ui.getFont());
 	toolSelect.setAction([this]() { setMode(Modes::None); });
 	toolsTile.addButton(toolSelect);
 
     Button toolRect(sf::FloatRect({ windowWidth - RIGHT_PANEL_WIDTH + UI_PADDING, 70.f }, { RIGHT_PANEL_WIDTH - UI_PADDING * 2, 25.f }),
-        L"Rect Counters", ui.getFont());
+        L"прямоугольник", ui.getFont());
     toolRect.setAction([this]() { setMode(Modes::AddRectCounters); });
     toolsTile.addButton(toolRect);
 
     Button toolPoly(sf::FloatRect({ windowWidth - RIGHT_PANEL_WIDTH + UI_PADDING, 105.f }, { RIGHT_PANEL_WIDTH - UI_PADDING * 2, 25.f }),
-        L"Polygon Counters", ui.getFont());
+        L"полигон", ui.getFont());
     toolPoly.setAction([this]() { setMode(Modes::AddPolygonCounters); });
     toolsTile.addButton(toolPoly);
 
     Button toolCirclet(sf::FloatRect({ windowWidth - RIGHT_PANEL_WIDTH + UI_PADDING, 140.f }, { RIGHT_PANEL_WIDTH - UI_PADDING * 2, 25.f }),
-        L"Circle Counters", ui.getFont());
+        L"круг", ui.getFont());
     toolCirclet.setAction([this]() { setMode(Modes::AddCircleCounters); });
     toolsTile.addButton(toolCirclet);
 
     Button toolCircle(sf::FloatRect({ windowWidth - RIGHT_PANEL_WIDTH + UI_PADDING, 175.f }, { RIGHT_PANEL_WIDTH - UI_PADDING * 2, 25.f }),
-        L"UpdateTextures", ui.getFont());
+        L"обновить", ui.getFont());
     toolCircle.setAction([this]() { schemTexture.emplace(schem.get(), &texManager); });
     toolsTile.addButton(toolCircle);
 
@@ -361,20 +351,21 @@ void Redactor::handleEvents() {
                     setStatusText(L"Полигон завершён и построен.");
                 }
             }
-            if (keyPressed->code == sf::Keyboard::Key::Escape) {
-                if (currentMode == Modes::AddRectCounters ||
-                    currentMode == Modes::AddPolygonCounters ||
-                    currentMode == Modes::AddCircleCounters)
-                {
-                    if (currentCounter && !currentCounter->getPoints().empty()) {
-                        currentCounter.reset();
-                        setStatusText(L"Текущее построение отменено.");
-                    }
+            if (keyPressed->code == sf::Keyboard::Key::Z) {
+                if (keyPressed->control) {
+                    if (currentMode == Modes::AddRectCounters ||
+                        currentMode == Modes::AddPolygonCounters ||
+                        currentMode == Modes::AddCircleCounters)
+                    {
+                        if (currentCounter && !currentCounter->getPoints().empty()) {
+							currentCounter->removeLastPoint();
+                        }
 
-                    if (!counters.empty()) {
-                        counters.back()->removePlacedBlocks(&*schemTexture);
-                        counters.pop_back();
-                        setStatusText(L"Последний контур удалён.");
+                        if (!counters.empty()) {
+                            counters.back()->removePlacedBlocks(&*schemTexture);
+                            counters.pop_back();
+                            setStatusText(L"Последний контур удалён.");
+                        }
                     }
                 }
             }
@@ -409,8 +400,7 @@ void Redactor::handleEvents() {
             // Сохраняем центр вида на момент начала перетаскивания
             dragCenter = viewCenter;
         }
-        
-        // Если мы в состоянии перетаскивания, обновляем вид
+
         if (isDragging) {
             sf::Vector2f current(mousePixel);
             sf::Vector2f delta = pressPosition - current;
@@ -494,77 +484,6 @@ void Redactor::draw() {
     window.display();
 }
 
-Redactor::BuildResult Redactor::buildTexturesImages() {
-    BuildResult result;
-    sf::Vector3i Pos1 = schem->getPos1();
-    sf::Vector3i Pos2 = schem->getPos2();
-    int w = Pos2.x - Pos1.x;
-    int l = Pos2.z - Pos1.z;
-    if (w <= 0 || l <= 0)
-        throw std::runtime_error("Invalid schematic dimensions");
-    result.width = w;
-    result.length = l;
-    sf::Image blockImage({ static_cast<unsigned int>(w * 1), static_cast<unsigned int>(l * 1) }, sf::Color(0, 0, 0, 0));
-    sf::Image heightImage({ static_cast<unsigned int>(w * 1), static_cast<unsigned int>(l * 1) }, sf::Color::Black);
-    
-    // Get all blocks in the schematic area for more efficient processing
-    auto blocks = schem->getBlocksInArea(Pos1.x, Pos1.y, Pos1.z, Pos2.x, Pos2.y, Pos2.z);
-    
-    for (const auto& b : blocks) {
-        int lx = b.x - Pos1.x;
-        int ly = b.y - Pos1.y;
-        int lz = b.z - Pos1.z;
-        
-        // Only process blocks within our bounds (should already be true from getBlocksInArea)
-        if (lx < 0 || lx >= w || ly < 0 || ly >= (Pos2.y - Pos1.y) || lz < 0 || lz >= l) {
-            continue;
-        }
-        
-        // For simplicity, we're only storing the top block at each x,z position
-        // In a more complex implementation, we might want to store multiple layers
-        auto it = result.topBlocks.find({lx, lz});
-        if (it == result.topBlocks.end() || b.y > it->second) {
-            result.topBlocks[{lx, lz}] = b.blockId;
-            result.topHeights[{lx, lz}] = b.y;
-        }
-    }
-    
-    float maxHeight = 1.0f;
-    for (int lx = 0; lx < w; ++lx) {
-        for (int lz = 0; lz < l; ++lz) {
-            auto it = result.topHeights.find({lx, lz});
-            if (it != result.topHeights.end() && it->second > maxHeight)
-                maxHeight = static_cast<float>(it->second);
-        }
-    }
-    result.maxHeight = std::max(maxHeight, 1.0f);
-    
-    for (int lx = 0; lx < w; ++lx) {
-        for (int lz = 0; lz < l; ++lz) {
-            auto hb = result.topHeights.find({lx, lz});
-            auto bb = result.topBlocks.find({lx, lz});
-            if (hb == result.topHeights.end() || bb == result.topBlocks.end()) continue;
-            int h = hb->second;
-            const sf::Image* texImg = texManager.getImage(schem->getPalette().getName(bb->second));
-            for (int py = 0; py < 1; ++py) {
-                for (int px = 0; px < 1; ++px) {
-                    sf::Color pixel = texImg ? texImg->getPixel({ static_cast<unsigned int>(px), static_cast<unsigned int>(py) }) : texManager.getColor(schem->getPalette().getName(bb->second));
-                    if (!texImg) pixel.a = 255;
-                    unsigned int imgX = static_cast<unsigned int>(lx * 1 + px);
-                    unsigned int imgY = static_cast<unsigned int>(lz * 1 + py);
-                    blockImage.setPixel({ imgX, imgY }, pixel);
-                    float normH = static_cast<float>(h) / result.maxHeight;
-                    uint8_t heightValue = static_cast<uint8_t>(std::clamp(normH * 255.f, 0.f, 255.f));
-                    heightImage.setPixel({ imgX, imgY }, sf::Color(heightValue, 255, 0));
-                }
-            }
-        }
-    }
-    result.blockImage = std::move(blockImage);
-    result.heightImage = std::move(heightImage);
-    return result;
-}
-
 void Redactor::showLoadDialog() {
 #ifdef _WIN32
     OPENFILENAMEA ofn = {};
@@ -578,7 +497,6 @@ void Redactor::showLoadDialog() {
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
     if (GetOpenFileNameA(&ofn)) {
         schem->loadFromFile(fileName);
-        // Перестраиваем текстуры после загрузки
         try {
             schemTexture.emplace(schem.get(), &texManager);
         }

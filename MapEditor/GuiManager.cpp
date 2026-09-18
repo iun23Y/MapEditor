@@ -85,7 +85,9 @@ GuiManager::GuiManager() {
 }
 
 bool GuiManager::loadFont(const std::string& filename) {
-    return font.openFromFile(filename);
+    bool loaded = font.openFromFile(filename);
+    font.setSmooth(false);
+    return loaded;
 }
 
 void GuiManager::update(const sf::Vector2f& mousePos, bool mouseClicked) {

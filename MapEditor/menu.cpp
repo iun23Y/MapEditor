@@ -1,13 +1,12 @@
 ﻿#include "Menu.h"
 #include "schematic.h"
 #include "redactor.h"
-#include "helper.h"     // <-- для getExeDirectory
+#include "helper.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <chrono>
 
-// ��� ������� ������ ����� ��� Windows
 #ifdef _WIN32
 #include <windows.h>
 #include <commdlg.h>
@@ -16,43 +15,52 @@
 Menu::Menu(int width, int height)
     : window(sf::VideoMode({ static_cast<unsigned int>(width), static_cast<unsigned int>(height) }),
         L"Schematic Viewer - Menu",
-        sf::Style::Default) {
+        sf::Style::Close) {
     window.setFramerateLimit(60);
+    if (imageIcon.loadFromFile(getExeDirectory() + "Resources\\Image\\Icon\\icon.png"))
+    window.setIcon(imageIcon);
     loadSettings();
 
-    // Load font or fallback
-    if (!font.openFromFile("")) {
-        if (!font.openFromFile("C:/Windows/Fonts/consola.ttf")) {
-            font = sf::Font();
-        }
-    }
-
-    // ���������� ������
     float centerX = static_cast<float>(width) / 2.f;
     float yStart = 100.f;
     float buttonWidth = 250.f;
     float buttonHeight = 50.f;
     float spacing = 20.f;
 
-    auto addButton = [&](const std::wstring& label, std::function<void()> action) {
-        sf::FloatRect rect({ centerX - buttonWidth / 2, yStart }, { buttonWidth, buttonHeight });
-        buttons.push_back({ rect, label, action, sf::Color(70, 70, 120), sf::Color(100, 100, 180) });
-        yStart += buttonHeight + spacing;
-        };
+    backGround.loadFromFile(getExeDirectory() + "Resources\\Image\\Background\\sakhalinskaya-obl_mayak-aniva_3.png");
 
-    addButton(L"Load schematic", [this]() { showLoadDialog(); });
-    addButton(L"~Settings~", [this]() {
-        std::cout << "Settings (enter shadow strength 0.0-1.0):\n";
-        std::cout << "Shadow strength: ";
-        float val;
-        std::cin >> val;
-        if (val >= 0 && val <= 1) {
-            settings.shadowStrength = val;
-            saveSettings();
-        }
-        });
-    addButton(L"About", [this]() { showInfoDialog(); });
-    addButton(L"Exit", [this]() { window.close(); });
+    ui = GuiManager();
+    if (!ui.loadFont(getExeDirectory() + "Resources\\Fonts\\Deledda Closed Semibold.ttf")) {
+        ui.loadFont("C:/Windows/Fonts/arial.ttf");
+    }
+
+    Tile mainTile(sf::FloatRect({ 0, 0 }, static_cast<sf::Vector2f>(window.getSize())));
+    mainTile.setBackground({10, 20, 0, 50});
+    mainTile.setOutline(0.f, GuiStyle::PanelBorder);
+
+    Label mainLabel({ static_cast<float>(window.getSize().x) / 2.f - 90.f / 2.f, 20.f }, L"МАПЪ", ui.getFont(), 35);
+    mainTile.addLabel(mainLabel);
+
+    Label versionLabel({ 10, static_cast<float>(window.getSize().y) - 20 }, L"Version: " + PROGRAM_VERSION + L" | Minecraft : " + MC_VERSION, ui.getFont(), 10);
+    mainTile.addLabel(versionLabel);
+
+    Button loadButton(sf::FloatRect({ centerX - buttonWidth / 2, 100.f }, { buttonWidth, buttonHeight }), L"загрузить", ui.getFont());
+    loadButton.setAction([this]() { showLoadDialog(); });
+    loadButton.setColors(GuiStyle::ButtonNormal, sf::Color({ 140, 168, 184, 120 }));
+    mainTile.addButton(loadButton);
+
+    Button aboutButton(sf::FloatRect({ centerX - buttonWidth / 2, 170.f }, { buttonWidth, buttonHeight }), L"о программе", ui.getFont());
+    aboutButton.setAction([this]() { showInfoDialog(); });
+    aboutButton.setColors(GuiStyle::ButtonNormal, sf::Color({ 140, 168, 184, 120}));
+    mainTile.addButton(aboutButton);
+
+    Button exitButton(sf::FloatRect({ centerX - buttonWidth / 2, 240.f }, { buttonWidth, buttonHeight }), L"выйти", ui.getFont());
+    exitButton.setAction([this]() { window.close(); });
+    exitButton.setColors(GuiStyle::ButtonNormal, sf::Color({ 140, 168, 184, 120 }));
+    mainTile.addButton(exitButton);
+
+    ui.addTile(mainTile);
+    ui.setActiveTile(0, true);
 }
 
 void Menu::run() {
@@ -64,71 +72,41 @@ void Menu::run() {
 }
 
 void Menu::handleEvents() {
+    bool mouseClicked = false;
     while (const auto event = window.pollEvent()) {
         if (event->is<sf::Event::Closed>())
             window.close();
-
-        if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
-            sf::Vector2f mouse(static_cast<float>(mouseMoved->position.x),
-                static_cast<float>(mouseMoved->position.y));
-            for (auto& btn : buttons) {
-                btn.hovered = btn.rect.contains(mouse);
-            }
-        }
-
-        if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+        if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonReleased>()) {
             if (mousePressed->button == sf::Mouse::Button::Left) {
-                sf::Vector2f mouse(static_cast<float>(mousePressed->position.x),
-                    static_cast<float>(mousePressed->position.y));
-                for (auto& btn : buttons) {
-                    if (btn.rect.contains(mouse) && btn.action) {
-                        btn.action();
-                        break;
-                    }
-                }
+                mouseClicked = true;
             }
         }
-
         if (const auto* resized = event->getIf<sf::Event::Resized>()) {
             // ��������� ������ ���� � ���
             window.setView(sf::View(sf::FloatRect({ 0,0 }, { static_cast<float>(resized->size.x),
                                                           static_cast<float>(resized->size.y) })));
         }
     }
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    sf::Vector2f mousePixel = sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
+    ui.update(mousePixel, mouseClicked);
+
+    mouseClicked = false;
 }
 
 void Menu::update() {
-    // ���������� ��������� (���� �����)
+
 }
 
 void Menu::draw() {
     window.clear(settings.backgroundColor);
 
-    // ���������
-    sf::Text title(font, "Schematic Viewer", 40);
-    title.setFillColor(sf::Color::White);
-    title.setPosition({ static_cast<float>(window.getSize().x) / 2.f - title.getLocalBounds().size.x / 2.f, 20.f });
-    window.draw(title);
+    sf::Sprite backgroundSprite(backGround);
+    backgroundSprite.setScale({ float(window.getSize().x) / float(backGround.getSize().x), float(window.getSize().y) / float(backGround.getSize().y) });
+    window.draw(backgroundSprite);
 
-    for (auto& btn : buttons) {
-        sf::RectangleShape shape(btn.rect.size);
-        shape.setPosition(btn.rect.position);
-        shape.setFillColor(btn.hovered ? btn.hoverColor : btn.color);
-        window.draw(shape);
-
-        sf::Text text(font, btn.label, 24);
-        text.setFillColor(sf::Color::White);
-        auto bounds = text.getLocalBounds();
-        text.setPosition({ btn.rect.position.x + btn.rect.size.x / 2.f - bounds.size.x / 2.f,
-                          btn.rect.position.y + btn.rect.size.y / 2.f - bounds.size.y / 2.f });
-        window.draw(text);
-    }
-
-    // ������ �����
-    sf::Text version(font, L"Version: " + PROGRAM_VERSION + L"  |  Minecraft: " + MC_VERSION, 14);
-    version.setFillColor(sf::Color(180, 180, 180));
-    version.setPosition({ 10, static_cast<float>(window.getSize().y) - 30 });
-    window.draw(version);
+    ui.draw(window);
 
     window.display();
 }
@@ -148,14 +126,13 @@ void Menu::showLoadDialog() {
     if (GetOpenFileNameA(&ofn)) {
         std::string path(fileName);
         settings.lastSchematicPath = path;
-        saveSettings();
         startLoad(path);
 
         while (window.isOpen() && isLoading) {
             handleEvents();
             window.clear(settings.backgroundColor);
 
-            sf::Text status(font, L"Loading schematic...", 24);
+            sf::Text status(ui.getFont(), L"Loading schematic...", 24);
             status.setFillColor(sf::Color::White);
             status.setPosition({ 40.f, static_cast<float>(window.getSize().y) / 2.f - 20.f });
             window.draw(status);
@@ -186,7 +163,6 @@ void Menu::showLoadDialog() {
         loadedSchematic.reset();
     }
 #else
-    // ��� Linux/macOS ����� ������������ zenity ��� ���� � �������
     std::cout << "Enter path to schematic file: ";
     std::string path;
     std::cin >> path;
@@ -204,8 +180,7 @@ void Menu::showLoadDialog() {
 }
 
 void Menu::showInfoDialog() {
-    // ������ ��������� ���� � �����������
-    sf::RenderWindow infoWindow(sf::VideoMode({ 400, 200 }), L"About");
+    sf::RenderWindow infoWindow(sf::VideoMode({ 400, 200 }), L"About", sf::Style::Titlebar|sf::Style::Close);
     sf::Font fnt;
     bool loaded = fnt.openFromFile("Benbow Regular.ttf");
     if (!loaded) {
@@ -273,15 +248,5 @@ void Menu::processLoad() {
             }
             isLoading = false;
         }
-    }
-}
-
-void Menu::saveSettings() const {
-    std::ofstream file("settings.cfg");
-    if (file.is_open()) {
-        file << "lastPath=" << settings.lastSchematicPath << "\n";
-        file << "shadowStrength=" << settings.shadowStrength << "\n";
-        file << "initialZoom=" << settings.initialZoom << "\n";
-        file.close();
     }
 }

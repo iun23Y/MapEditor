@@ -407,6 +407,11 @@ public:
 
     void setSelected(bool sel) { selected = sel; }
     bool isSelected() const { return selected; }
+    void removeLastPoint() {
+        if (points.empty()) return;
+        points.pop_back();
+        completed = false;
+	}
 
     std::vector<sf::Vector2i> buildBorder() {
         std::vector<sf::Vector2i> border;

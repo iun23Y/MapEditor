@@ -74,6 +74,10 @@
     <ExecutablePath>C:\Program Files\vcpkg-master\installed\x64-windows-static\include;$(ExecutablePath)</ExecutablePath>
     <LibraryPath>C:\Program Files\vcpkg-master\installed\x64-windows-static\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ExecutablePath>C:\Program Files\vcpkg-master\installed\x64-windows-static\include;$(ExecutablePath)</ExecutablePath>
+    <LibraryPath>C:\Program Files\vcpkg-master\installed\x64-windows-static\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <VcpkgTriplet>x64-windows-static</VcpkgTriplet>
   </PropertyGroup>
@@ -116,10 +120,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>winmm.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;
-libcrypto.lib
-;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib
-;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;libcrypto.lib;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files\vcpkg-master\installed\x64-windows-static\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -129,25 +130,27 @@ libcrypto.lib
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>SFML_STATIC;NDEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>SFML_STATIC;NDEBUG;_CONSOLE;CPPHTTPLIB_OPENSSL_SUPPORT;CRYPTOPP_STATIC_DEFINE;WIN32_LEAN_AND_MEAN;NOMINMAX;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>winmm.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;
-libcrypto.lib
-;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib
-;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;sfml-graphics-s.lib
+;sfml-window-s.lib;
+sfml-system-s.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;libcrypto.lib;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\path\to\vcpkg\installed\x64-windows-static\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BTEGeoConventor.h" />
+    <ClInclude Include="Chunk.h" />
     <ClInclude Include="counters.h" />
     <ClInclude Include="menu.h" />
+    <ClInclude Include="NBTManager.h" />
+    <ClInclude Include="resource5.h" />
     <ClInclude Include="schematic.h" />
     <ClInclude Include="redactor.h" />
     <ClInclude Include="schematicTexture.h" />
@@ -158,14 +161,22 @@ libcrypto.lib
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BTEGeoConventor.cpp" />
+    <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="counters.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="menu.cpp" />
+    <ClCompile Include="NBTManager.cpp" />
     <ClCompile Include="schematic.cpp" />
     <ClCompile Include="redactor.cpp" />
     <ClCompile Include="GuiManager.cpp" />
     <ClCompile Include="schematicTexture.cpp" />
     <ClCompile Include="textureManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MapEditor.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\x64\Debug\Resources\Image\Icon\icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

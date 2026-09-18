@@ -112,7 +112,7 @@ sf::Image schematicTexture::generateRegionImage(int rx, int rz) {
         const int lx = b.x - rx, lz = b.z - rz;
         if (lx < 0 || lx >= regionSize || lz < 0 || lz >= regionSize) continue;
 
-        const std::string blockName = schematic->getPalette().getName(b.blockId);
+        const std::string blockName = stripBlockStates(schematic->getPalette().getName(b.blockId));
         const sf::Image* img = textures->getImage(blockName);
         if (!img) continue;
 
