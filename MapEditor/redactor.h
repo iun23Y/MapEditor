@@ -36,16 +36,6 @@ private:
     std::unique_ptr<Counter> currentCounter;
     std::vector<std::unique_ptr<Counter>> counters;
 
-    struct BuildResult {
-        sf::Image blockImage;
-        sf::Image heightImage;
-        float maxHeight = -128.0f;
-        int width = 0;
-        int length = 0;
-        std::unordered_map<sf::Vector2i, int, Vector2iHash, Vector2iEqual> topBlocks;
-        std::unordered_map<sf::Vector2i, int, Vector2iHash, Vector2iEqual> topHeights;
-    };
-
     bool leftMousePressed = false;
     bool mouseClicked = false;
     sf::Time pressStartTime;
@@ -63,7 +53,6 @@ private:
 
     int findCounterAt(const sf::Vector2f& worldPos) const;
     void handleMapClick(const sf::Vector2f& windowPixel);
-    BuildResult buildTexturesImages();
     void updateView();
     void initUI();
     void handleEvents();
@@ -89,7 +78,6 @@ private:
     std::size_t selectedCounterIndex = std::numeric_limits<std::size_t>::max();
     std::unique_ptr<sf::Text> statusText;
     std::unique_ptr<sf::Text> infoText;
-    sf::Font font;
     std::wstring statusMessage;
     std::optional<TileMap> tileMap;
 

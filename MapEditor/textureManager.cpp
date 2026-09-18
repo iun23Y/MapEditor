@@ -5,7 +5,7 @@
 using namespace nlohmann;
 
 textureManager::textureManager() {
-    pathJson = getExeDirectory() + "Resources\\blockTextures.json";
+    pathJson = getExeDirectory() + "Resources\\blocks.json";
     pathTextures = getExeDirectory() + "Resources\\Textures";
     loadData();
 }
@@ -14,12 +14,11 @@ bool textureManager::loadData() {
     if (!file.is_open()) return false;
     json data;
     try { file >> data; }
-    catch (const json::parse_error&) {
-        return false;
-    }
+    catch (const json::parse_error&) { return false; }
 
     for (auto& [blockName, obj] : data.items()) {
         sf::Color color = sf::Color::Magenta;
+        bool hasColor = false;
         if (obj.contains("color") && obj["color"].is_string()) {
             std::string colorStr = obj["color"].get<std::string>();
             if (colorStr.size() == 7 && colorStr[0] == '#') {
@@ -27,10 +26,9 @@ bool textureManager::loadData() {
                 int g = std::stoi(colorStr.substr(3, 2), nullptr, 16);
                 int b = std::stoi(colorStr.substr(5, 2), nullptr, 16);
                 color = sf::Color(r, g, b);
+                hasColor = true;
             }
         }
-        colors[blockName] = color;
-
         sf::Texture texture;
         bool loaded = false;
 
@@ -45,18 +43,33 @@ bool textureManager::loadData() {
             sf::Image img({ 16, 16 }, color);
             loaded = texture.loadFromImage(img);
         }
+        if (loaded && !hasColor) {
+            sf::Image img = texture.copyToImage();
+            sf::Vector2u size = img.getSize();
+            uint64_t r = 0, g = 0, b = 0, n = 0;
+            for (unsigned y = 0; y < size.y; ++y) {
+                for (unsigned x = 0; x < size.x; ++x) {
+                    sf::Color px = img.getPixel({ x, y });
+                    if (px.a < 128) continue;
+                    r += px.r; g += px.g; b += px.b; ++n;
+                }
+            }
+            if (n > 0) {
+                color = sf::Color(uint8_t(r / n), uint8_t(g / n), uint8_t(b / n));
+            }
+        }
+
+        colors[blockName] = color;
+
         if (loaded) {
             textures.emplace(blockName, std::move(texture));
         }
-
         auto it = textures.find(blockName);
         if (it != textures.end()) {
-            sf::Image img = it->second.copyToImage();
-            images[blockName] = std::move(img);
+            images[blockName] = it->second.copyToImage();
         }
         else {
-            sf::Image img({ 16, 16 }, colors[blockName]);
-            images[blockName] = std::move(img);
+            images[blockName] = sf::Image({ 16, 16 }, colors[blockName]);
         }
     }
     return true;

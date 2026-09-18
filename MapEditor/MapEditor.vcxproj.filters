@@ -13,28 +13,70 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Исходные файлы\System">
+      <UniqueIdentifier>{d96f42fb-cc34-4a72-906d-bac9bf3cfa1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Main">
+      <UniqueIdentifier>{7754c18b-b4e0-4b98-a8c1-b0d90b436379}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Utils">
+      <UniqueIdentifier>{bcb5d7be-8006-44f7-8545-21f164552d0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Object">
+      <UniqueIdentifier>{b6d7d5f3-1c2f-499f-a413-c7d704b7ea0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Main">
+      <UniqueIdentifier>{34b1f0c4-4b05-4a05-8eae-bc8313f6ff80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\System">
+      <UniqueIdentifier>{51a12e55-0ba4-426c-bd74-f7b057aba54a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Utils">
+      <UniqueIdentifier>{f9a1c6e9-c98e-4149-bd43-bbc17e99df87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Object">
+      <UniqueIdentifier>{e168acd4-3c03-4179-97dc-ba1cc93b70eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="schematic.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="BTEGeoConventor.h">
+      <Filter>Файлы заголовков\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="counters.h">
+      <Filter>Файлы заголовков\Object</Filter>
     </ClInclude>
     <ClInclude Include="menu.h">
-      <Filter>Файлы заголовков</Filter>
+      <Filter>Файлы заголовков\Main</Filter>
     </ClInclude>
     <ClInclude Include="redactor.h">
-      <Filter>Файлы заголовков</Filter>
+      <Filter>Файлы заголовков\Main</Filter>
     </ClInclude>
-    <ClInclude Include="tileLoader.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="schematic.h">
+      <Filter>Файлы заголовков\System</Filter>
+    </ClInclude>
+    <ClInclude Include="schematicTexture.h">
+      <Filter>Файлы заголовков\System</Filter>
     </ClInclude>
     <ClInclude Include="tileMap.h">
-      <Filter>Файлы заголовков</Filter>
+      <Filter>Файлы заголовков\System</Filter>
     </ClInclude>
-    <ClInclude Include="BTEGeoConventor.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="tileLoader.h">
+      <Filter>Файлы заголовков\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="resource5.h">
+      <Filter>Файлы заголовков\System</Filter>
+    </ClInclude>
+    <ClInclude Include="textureManager.h">
+      <Filter>Файлы заголовков\System</Filter>
     </ClInclude>
     <ClInclude Include="GuiManager.h">
-      <Filter>Файлы заголовков</Filter>
+      <Filter>Файлы заголовков\System</Filter>
+    </ClInclude>
+    <ClInclude Include="NBTManager.h">
+      <Filter>Файлы заголовков\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Chunk.h">
+      <Filter>Файлы заголовков\System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -42,19 +84,44 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="schematic.cpp">
-      <Filter>Исходные файлы</Filter>
+      <Filter>Исходные файлы\System</Filter>
     </ClCompile>
-    <ClCompile Include="menu.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="redactor.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="BTEGeoConventor.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="textureManager.cpp">
+      <Filter>Исходные файлы\System</Filter>
     </ClCompile>
     <ClCompile Include="GuiManager.cpp">
-      <Filter>Исходные файлы</Filter>
+      <Filter>Исходные файлы\System</Filter>
     </ClCompile>
+    <ClCompile Include="redactor.cpp">
+      <Filter>Исходные файлы\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.cpp">
+      <Filter>Исходные файлы\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="schematicTexture.cpp">
+      <Filter>Исходные файлы\System</Filter>
+    </ClCompile>
+    <ClCompile Include="BTEGeoConventor.cpp">
+      <Filter>Исходные файлы\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="counters.cpp">
+      <Filter>Исходные файлы\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="NBTManager.cpp">
+      <Filter>Исходные файлы\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Chunk.cpp">
+      <Filter>Исходные файлы\System</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MapEditor.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\x64\Debug\Resources\Image\Icon\icon.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
   </ItemGroup>
 </Project>

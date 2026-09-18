@@ -16,6 +16,11 @@ static std::string getExeDirectory() {
     return path;
 }
 
+static std::string stripBlockStates(const std::string& name) {
+    auto pos = name.find('[');
+    return (pos == std::string::npos) ? name : name.substr(0, pos);
+}
+
 namespace std {
     template<>
     struct hash<sf::Vector3i> {

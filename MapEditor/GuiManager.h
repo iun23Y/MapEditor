@@ -5,7 +5,6 @@
 #include <functional>
 #include <optional>
 
-// ------------------- Глобальные стили -------------------
 namespace GuiStyle {
     const sf::Color PanelBackground = sf::Color(15, 25, 40, 220);
     const sf::Color PanelBorder = sf::Color(220, 220, 220, 180);
@@ -15,7 +14,6 @@ namespace GuiStyle {
     const sf::Color OverlayColor = sf::Color(255, 255, 255, 32);
 }
 
-// ------------------- Button -------------------
 class Button {
 private:
     sf::FloatRect rect;
@@ -26,7 +24,6 @@ private:
     sf::Color color;
     sf::Color hoverColor;
 public:
-    // Основной конструктор с явными цветами
     Button(const sf::FloatRect& rect, const std::wstring& label, const sf::Font& font,
         const sf::Color& normal = GuiStyle::ButtonNormal,
         const sf::Color& hover = GuiStyle::ButtonHover);
@@ -40,7 +37,6 @@ public:
     void draw(sf::RenderTarget& target) const;
 };
 
-// ------------------- Label -------------------
 class Label {
 private:
     std::optional<sf::Text> text;
@@ -51,7 +47,6 @@ public:
     void draw(sf::RenderTarget& target) const { target.draw(text.value()); }
 };
 
-// ------------------- Tile (вкладка) -------------------
 class Tile {
 private:
     sf::FloatRect rect;
@@ -87,7 +82,6 @@ public:
     sf::FloatRect getRect() const { return rect; }
 };
 
-// ------------------- GuiManager (главный контейнер) -------------------
 class GuiManager {
 private:
     sf::Font font;
