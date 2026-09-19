@@ -1,6 +1,7 @@
 #include "schematic.h"
 #include "helper.h"
 #include "NBTManager.h"
+#include "BlockPalette.h"
 
 #include <SFML/Graphics/Color.hpp>
 #include <algorithm>
@@ -70,27 +71,6 @@ namespace {
         deflateEnd(&strm);
         return output;
     }
-}
-
-void BlockPalette::addBlock(int id, const std::string& name) {
-    if (id == -1) id = 0;
-    if (idByName.find(name) != idByName.end() || nameById.find(id) != nameById.end()) return;
-    nameById[id] = name;
-    idByName[name] = id;
-}
-bool BlockPalette::hasBlock(int id) const {
-    return nameById.find(id) != nameById.end();
-}
-bool BlockPalette::hasBlock(const std::string& name) const {
-    return idByName.find(name) != idByName.end();
-}
-int BlockPalette::getId(const std::string& name) const {
-    auto it = idByName.find(name);
-    return it == idByName.end() ? -1 : it->second;
-}
-std::string BlockPalette::getName(int id) const {
-    auto it = nameById.find(id);
-    return it == nameById.end() ? "" : it->second;
 }
 
 SchematicMap::SchematicMap(const std::string& filename, const std::string& worldDir) {
@@ -339,8 +319,7 @@ bool SchematicMap::hasBlock(int x, int y, int z) const {
     return getBlock(x, y, z) >= 0;
 }
 
-std::vector<SchematicMap::RegionBlock>
-SchematicMap::getBlocksInArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const {
+std::vector<SchematicMap::RegionBlock> SchematicMap::getBlocksInArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     std::vector<RegionBlock> result;
     if (minX > maxX || minY > maxY || minZ > maxZ) return result;
@@ -374,8 +353,7 @@ SchematicMap::getBlocksInArea(int minX, int minY, int minZ, int maxX, int maxY, 
     return result;
 }
 
-std::vector<SchematicMap::RegionBlock>
-SchematicMap::getTopBlocksInArea(int minX, int minZ, int maxX, int maxZ) const {
+std::vector<SchematicMap::RegionBlock> SchematicMap::getTopBlocksInArea(int minX, int minZ, int maxX, int maxZ) const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     if (!hasBounds || minX > maxX || minZ > maxZ) return {};
 
@@ -444,8 +422,7 @@ SchematicMap::getTopBlocksInArea(int minX, int minZ, int maxX, int maxZ) const {
     return result;
 }
 
-std::vector<SchematicMap::RegionBlock>
-SchematicMap::getRegionBlocks(int regionX, int regionY, int regionZ) const {
+std::vector<SchematicMap::RegionBlock> SchematicMap::getRegionBlocks(int regionX, int regionY, int regionZ) const {
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
     const int S = Chunk::SIZE;

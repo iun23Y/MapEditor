@@ -43,7 +43,7 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
     
     try {
         tileMap.emplace(19, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
-        tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
+        //tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize tile map: " << e.what() << std::endl;
         // Continue without tile map background

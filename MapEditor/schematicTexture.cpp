@@ -3,6 +3,8 @@
 
 #include <SFML/Graphics.hpp>
 #include <algorithm>
+#include <climits>
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -24,9 +26,13 @@ void schematicTexture::processCompletedUploads() {
             completedQueue.pop_front();
             notFullCV.notify_one();
         }
+
         sf::Texture texture;
+        texture.setSmooth(false);
+        texture.setRepeated(false);
         if (!texture.loadFromImage(result.image))
             continue;
+
         regionCache[{ result.rx, result.rz }] = std::move(texture);
     }
 }
@@ -96,32 +102,51 @@ void schematicTexture::enqueueRegion(int rx, int rz, int centerRx, int centerRz)
 }
 
 sf::Image schematicTexture::generateRegionImage(int rx, int rz) {
-    sf::Image regionImage(
-        { static_cast<unsigned int>(regionSize * 16),
-          static_cast<unsigned int>(regionSize * 16) },
-        sf::Color(0, 0, 0, 0));
+    const int S = regionSize;          // 256
+    const int P = 1;                   // padding
+    const int W = S + 2 * P;           // 258 — размер idMap
 
-    auto blocks = schematic->getTopBlocksInArea(rx, rz,
-        rx + regionSize - 1,
-        rz + regionSize - 1);
+    std::vector<int16_t>  topY(W * W, INT16_MIN);
+    std::vector<uint16_t> slots(W * W, 0);
+
+    // читаем на P блоков больше со всех сторон
+    auto blocks = schematic->getTopBlocksInArea(
+        rx - P, rz - P, rx + S - 1 + P, rz + S - 1 + P);
 
     for (const auto& b : blocks) {
-        if (stopWorkers.load(std::memory_order_relaxed))
-            return regionImage;
+        const int lx = b.x - (rx - P);   // 0..W-1
+        const int lz = b.z - (rz - P);
+        if (lx < 0 || lx >= W || lz < 0 || lz >= W) continue;
 
-        const int lx = b.x - rx, lz = b.z - rz;
-        if (lx < 0 || lx >= regionSize || lz < 0 || lz >= regionSize) continue;
+        const uint16_t slot = textures->getAtlasSlot(b.blockId);
+        if (slot == 0) continue;
 
-        const std::string blockName = stripBlockStates(schematic->getPalette().getName(b.blockId));
-        const sf::Image* img = textures->getImage(blockName);
-        if (!img) continue;
-
-        regionImage.copy(*img,
-            { static_cast<unsigned int>(lx * 16),
-              static_cast<unsigned int>(lz * 16) },
-            sf::IntRect({ 0, 0 }, { 16, 16 }), true);
+        topY[lz * W + lx] = (int16_t)b.y;
+        slots[lz * W + lx] = slot;
     }
-    return regionImage;
+
+    sf::Image idMap({ (unsigned)W, (unsigned)W }, sf::Color(0, 0, 0, 0));
+    const int minY = schematic->getPos1().y;
+
+    for (int z = 0; z < W; ++z) {
+        for (int x = 0; x < W; ++x) {
+            const uint16_t slot = slots[z * W + x];
+            if (slot == 0) continue;
+
+            const int myY = topY[z * W + x];
+            if (myY == INT16_MIN) continue;
+
+            const uint8_t r = slot & 0xFF;
+            const uint8_t g = (slot >> 8) & 0xFF;
+
+            const int relY = myY - minY;
+            const uint16_t h16 = (uint16_t)std::clamp(relY, 0, 65535);
+
+            idMap.setPixel({ (unsigned)x, (unsigned)z },
+                sf::Color(r, g, h16 & 0xFF, (h16 >> 8) & 0xFF));
+        }
+    }
+    return idMap;
 }
 
 void schematicTexture::removeOutdatedRegions(int minRx, int minRz, int maxRx, int maxRz) {
@@ -181,11 +206,22 @@ void schematicTexture::updateCache(const sf::View& view) {
 
 schematicTexture::schematicTexture(SchematicMap* schematic, textureManager* textureManager)
     : schematic(schematic), textures(textureManager) {
+
     const unsigned int threadCount = std::max(1u, std::min(4u,
         std::thread::hardware_concurrency() > 2
         ? std::thread::hardware_concurrency() - 2 : 1u));
+
     for (unsigned int i = 0; i < threadCount; ++i)
         workers.emplace_back(&schematicTexture::workerThread, this);
+
+    textures->buildAtlas(schematic->getPalette());
+
+    shader = std::make_unique<sf::Shader>();
+    if (!shader->loadFromFile(
+        getExeDirectory() + "Resources\\Shaders\\region.vert",
+        getExeDirectory() + "Resources\\Shaders\\region.frag")) {
+        std::cerr << "shader load failed\n";
+    }
 }
 
 schematicTexture::~schematicTexture() {
@@ -204,12 +240,31 @@ void schematicTexture::draw(sf::RenderTarget& target, sf::RenderStates states) {
     updateCache(view);
     processCompletedUploads();
 
-    for (const auto& [key, texture] : regionCache) {
-        sf::Sprite sprite(texture);
-		sf::Vector2f position(static_cast<float>(key.first), static_cast<float>(key.second));
+    if (!shader) return;
 
-        sprite.setPosition(schematic->worldToLocal(position));
-        sprite.setScale({ 1.f / 16.f, 1.f / 16.f });
+
+    shader->setUniform("regionSize", sf::Glsl::Vec2((float)regionSize, (float)regionSize));
+    shader->setUniform("atlasSize", sf::Glsl::Vec2(
+        (float)textureManager::ATLAS_W, (float)textureManager::ATLAS_H));
+    shader->setUniform("atlasGrid", sf::Glsl::Vec2(
+        (float)textureManager::COLS, (float)textureManager::ROWS));
+    shader->setUniform("tileSize", (float)textureManager::TILE);
+    shader->setUniform("atlas", textures->getAtlas());
+
+    states.shader = shader.get();
+    states.texture = &textures->getAtlas();
+
+    for (const auto& [key, texture] : regionCache) {
+        shader->setUniform("idMap", texture);
+        shader->setUniform("idMapSize", sf::Glsl::Vec2(
+            (float)(regionSize + 2), (float)(regionSize + 2)));
+
+        sf::Sprite sprite(texture);
+        sprite.setTextureRect(sf::IntRect({ 1, 1 }, { regionSize, regionSize }));
+        sprite.setPosition(schematic->worldToLocal(
+            sf::Vector2f((float)key.first, (float)key.second)));
+        sprite.setScale({ 1.f, 1.f });
+
         target.draw(sprite, states);
     }
 }

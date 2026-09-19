@@ -9,6 +9,52 @@ textureManager::textureManager() {
     pathTextures = getExeDirectory() + "Resources\\Textures";
     loadData();
 }
+void textureManager::buildAtlas(const BlockPalette& palette) {
+    sf::Image atlas({ ATLAS_W, ATLAS_H }, sf::Color::Transparent);
+
+    sf::Image missing({ 16, 16 }, sf::Color::Magenta);
+    for (unsigned y = 0; y < 16; ++y)
+        for (unsigned x = 0; x < 16; ++x)
+            if (((x / 8) ^ (y / 8)) & 1)
+                missing.setPixel({ x, y }, sf::Color::Black);
+    atlas.copy(missing, { TILE, 0 }, sf::IntRect({ 0, 0 }, { 16, 16 }), true);
+
+    int maxId = 0;
+    for (auto& [id, _] : palette.nameById) maxId = std::max(maxId, id);
+    idToSlot.assign(maxId + 1, 1);
+
+    uint16_t next = 2;
+    for (auto& [id, name] : palette.nameById) {
+        std::string stripped = stripBlockStates(name);
+
+        if (stripped == "minecraft:air" || stripped == "air" ||
+            stripped == "minecraft:__reserved__" || stripped == "__reserved__") {
+            idToSlot[id] = 0;
+            continue;
+        }
+        if (next >= COLS * ROWS) break;
+
+        auto it = images.find(stripped);
+        if (it == images.end()) {
+            idToSlot[id] = 1;
+            continue;
+        }
+
+        const unsigned col = next % COLS;
+        const unsigned row = next / COLS;
+        atlas.copy(it->second,
+            { col * TILE, row * TILE },
+            sf::IntRect({ 0, 0 }, { 16, 16 }), true);
+
+        idToSlot[id] = next;
+        ++next;
+    }
+
+    atlasTexture.loadFromImage(atlas);
+    atlasTexture.setSmooth(false);
+    atlasTexture.setRepeated(false);
+}
+
 bool textureManager::loadData() {
     std::ifstream file(pathJson);
     if (!file.is_open()) return false;
@@ -29,6 +75,7 @@ bool textureManager::loadData() {
                 hasColor = true;
             }
         }
+
         sf::Texture texture;
         bool loaded = false;
 
@@ -71,10 +118,25 @@ bool textureManager::loadData() {
         else {
             images[blockName] = sf::Image({ 16, 16 }, colors[blockName]);
         }
+
+        if (obj.contains("type") && obj["type"].is_string()) {
+            blockTypes[blockName] = obj["type"].get<std::string>();
+        }
+        else {
+            blockTypes[blockName] = "cube";
+        }
     }
     return true;
 }
 
+uint16_t textureManager::getAtlasSlot(int blockId) const {
+    if (blockId < 0 || blockId >= (int)idToSlot.size()) return 1;
+    return idToSlot[blockId];
+}
+std::string textureManager::getBlockType(const std::string& blockName) const {
+    auto it = blockTypes.find(blockName);
+    return it == blockTypes.end() ? "cube" : it->second;
+}
 const sf::Texture* textureManager::getTexture(const std::string& blockName) const {
     auto it = textures.find(blockName);
     if (it == textures.end())

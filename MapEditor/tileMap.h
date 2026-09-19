@@ -37,7 +37,6 @@ namespace {
 
 class TileMap {
 private:
-    // Структура для хранения ТОЛЬКО текстуры и позиции
     enum class TileState {
         Empty,
         Loading,
@@ -93,7 +92,6 @@ private:
         if (!isValidTile(x, y)) return;
         TileKey key{ x, y };
 
-        // 1. Проверяем, не загружается ли уже или не загружен
         {
             std::lock_guard<std::mutex> lock(m_tilesMutex);
             auto it = m_tiles.find(key);
@@ -103,8 +101,6 @@ private:
             }
         }
 
-        // 2. Вычисляем трансформацию (как в вашем синхронном коде)
-        //    Используем стандартный размер тайла 256x256 (все OSM/Google тайлы такие)
         const float TILE_SIZE = 256.f;
 
         auto [lon_min, lat_min] = tileToLonLat(x, y, m_zoom);
@@ -185,6 +181,27 @@ private:
             m_futures.end());
     }
 
+    void cleanupOutdatedTiles(int minX, int maxX, int minY, int maxY) {
+        constexpr int MARGIN = 3;
+
+        const int keepMinX = minX - MARGIN;
+        const int keepMaxX = maxX + MARGIN;
+        const int keepMinY = minY - MARGIN;
+        const int keepMaxY = maxY + MARGIN;
+
+        std::lock_guard<std::mutex> lock(m_tilesMutex);
+        for (auto it = m_tiles.begin(); it != m_tiles.end();) {
+            const TileKey& k = it->first;
+            if (k.x < keepMinX || k.x > keepMaxX ||
+                k.y < keepMinY || k.y > keepMaxY) {
+                it = m_tiles.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+    }
+
     std::tuple<int, int, int, int> getTileRange(const sf::FloatRect& rect) {
         sf::Vector2f center = { rect.position.x + rect.size.x / 2,
                                rect.position.y + rect.size.y / 2 };
@@ -234,6 +251,7 @@ public:
         }
         processLoadedTextures();
         cleanFutures();
+        cleanupOutdatedTiles(minX, maxX, minY, maxY);
     }
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const {
