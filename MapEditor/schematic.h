@@ -1,5 +1,7 @@
 #pragma once
 #include "Chunk.h"
+#include "BlockPalette.h"
+
 #include <SFML/System/Vector2.hpp>
 #include <SFML/System/Vector3.hpp>
 #include <filesystem>
@@ -13,18 +15,6 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-
-class BlockPalette {
-public:
-    std::unordered_map<int, std::string> nameById;
-    std::unordered_map<std::string, int> idByName;
-
-    void addBlock(int id, const std::string& name);
-    bool hasBlock(int id) const;
-    bool hasBlock(const std::string& name) const;
-    int  getId(const std::string& name) const;
-    std::string getName(int id) const;
-};
 
 class SchematicMap {
 public:

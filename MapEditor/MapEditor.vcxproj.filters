@@ -78,6 +78,9 @@
     <ClInclude Include="Chunk.h">
       <Filter>Файлы заголовков\System</Filter>
     </ClInclude>
+    <ClInclude Include="BlockPalette.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="Chunk.cpp">
       <Filter>Исходные файлы\System</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockPalette.cpp">
+      <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -145,6 +145,7 @@ sfml-system-s.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BlockPalette.h" />
     <ClInclude Include="BTEGeoConventor.h" />
     <ClInclude Include="Chunk.h" />
     <ClInclude Include="counters.h" />
@@ -160,6 +161,7 @@ sfml-system-s.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2
     <ClInclude Include="GuiManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BlockPalette.cpp" />
     <ClCompile Include="BTEGeoConventor.cpp" />
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="counters.cpp" />

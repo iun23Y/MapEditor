@@ -19,6 +19,7 @@ class schematicTexture {
 private:
     SchematicMap* schematic;
     textureManager* textures;
+    std::unique_ptr<sf::Shader> shader;
 
     static constexpr int regionSize = 128;
     static constexpr int cacheAddSize = 2;
