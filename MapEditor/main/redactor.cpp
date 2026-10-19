@@ -43,12 +43,12 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
     
     try {
         tileMap.emplace(19, sf::Vector2f{ float(schem->getPos1().x), float(schem->getPos1().z) });
-        //tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
+        tileMap->setCustomTileSource("https://tile.buildtheearth.ru/YandexAero/{x}/{y}/{z}");
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize tile map: " << e.what() << std::endl;
-        // Continue without tile map background
     }
 
+    pallete = texManager.buildPalette();
     schemTexture.emplace(schem.get(), &texManager);
 
     redactorView = sf::View(sf::FloatRect({ 0.f, 0.f }, { static_cast<float>(width), static_cast<float>(height) }));
@@ -56,78 +56,12 @@ Redactor::Redactor(std::unique_ptr<SchematicMap> schematic, int width, int heigh
     viewCenter = { 0.f, 0.f };
     zoom = 1.0f;
 
-    // Initialize mouse interaction state
     leftMousePressed = false;
     isDraggingMap = false;
     isDraggingCounter = false;
     lastMouseWorld = {0.f, 0.f};
 
     initUI();
-
-    // Компиляция шейдера для теней
-    std::string shaderCode = R"(
-uniform sampler2D blockTexture;
-uniform sampler2D heightTexture;
-uniform float maxHeight;
-uniform float shadowStrength;
-uniform float blockPixelSize;
-uniform float maxDiff;
-uniform float zoom;
-uniform float textureThreshold;
-
-void main() {
-    vec2 texCoord = gl_TexCoord[0].xy;
-    vec4 heightData = texture2D(heightTexture, texCoord);
-    float h = heightData.r * maxHeight;
-    float mask = heightData.g;
-
-    if (mask < 128.0 / 255.0) {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-        return;
-    }
-
-    vec2 texSize = textureSize(heightTexture, 0);
-    vec2 pixelPos = texCoord * texSize;
-    vec2 blockIndex = floor(pixelPos / blockPixelSize);
-    vec2 inside = (pixelPos - blockIndex * blockPixelSize) / blockPixelSize;
-
-    vec4 blockColor = texture2D(blockTexture, texCoord);
-    float alpha = blockColor.a;
-
-    float shadow = 0.0;
-    for (int dx = -1; dx <= 1; ++dx) {
-        for (int dy = -1; dy <= 1; ++dy) {
-            if (dx == 0 && dy == 0) continue;
-
-            vec2 neighborBlock = blockIndex + vec2(float(dx), float(dy));
-            vec2 neighborCoord = (neighborBlock * blockPixelSize + blockPixelSize * 0.5) / texSize;
-            vec4 neighborData = texture2D(heightTexture, neighborCoord);
-            float neighborH = neighborData.r * maxHeight;
-            float neighborMask = neighborData.g;
-
-            if (neighborMask < 128.0 / 255.0) continue;
-
-            if (neighborH > h) {
-                float diff = min(neighborH - h, maxDiff);
-                float weight = 1.0;
-
-                if (dx == -1)      weight *= (1.0 - inside.x);
-                else if (dx == 1)  weight *= inside.x;
-
-                if (dy == -1)      weight *= (1.0 - inside.y);
-                else if (dy == 1)  weight *= inside.y;
-
-                shadow += diff * weight;
-            }
-        }
-    }
-
-    shadow = min(1.0, shadow * shadowStrength);
-    float brightness = max(0.4, 1.0 - shadow);
-    vec3 shadedColor = blockColor.rgb * brightness;
-    gl_FragColor = vec4(shadedColor, alpha);
-}
-)";
 }
 
 void Redactor::initUI() {
@@ -501,7 +435,6 @@ void Redactor::showLoadDialog() {
             schemTexture.emplace(schem.get(), &texManager);
         }
         catch (const std::exception& e) {
-
             statusMessage = L"Error building textures: " + std::wstring(e.what(), e.what() + strlen(e.what()));
         }
     }

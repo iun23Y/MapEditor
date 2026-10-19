@@ -63,6 +63,7 @@ private:
     Modes currentMode = Modes::None;
 
     std::unique_ptr<SchematicMap> schem;
+    BlockPalette pallete;
 	textureManager texManager;
 	std::optional<schematicTexture> schemTexture;
     sf::RenderWindow window;

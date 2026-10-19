@@ -65,8 +65,6 @@ bool Chunk::decodeRLE(const std::vector<uint8_t>& data) {
     catch (...) {
         return false;
     }
-
-    // пересчитать maxY после декода
     recomputeMaxY();
     dirty = false;
     return true;

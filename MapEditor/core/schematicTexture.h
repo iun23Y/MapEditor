@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "schematic.h"
-#include "textureManager.h"
+#include "TextureManager.h"
 #include "helper.h"
 
 #include <SFML/Graphics.hpp>
@@ -18,7 +18,7 @@
 class schematicTexture {
 private:
     SchematicMap* schematic;
-    textureManager* textures;
+    TextureManager* textures;
     std::unique_ptr<sf::Shader> shader;
 
     static constexpr int regionSize = 128;
@@ -59,7 +59,7 @@ private:
     void updateCache(const sf::View& view);
 
 public:
-    schematicTexture(SchematicMap* schematic, textureManager* textureManager);
+    schematicTexture(SchematicMap* schematic, TextureManager* textureManager);
     ~schematicTexture();
     void draw(sf::RenderTarget& target, sf::RenderStates states);
     void updateRegion(sf::Vector2i pos);

@@ -19,7 +19,6 @@
 constexpr double PI = 3.14159265358979323846;
 
 namespace BTEGeoConventor {
-    
     namespace utils {
         class InvertableVectorField {
         private:

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -111,11 +111,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;CPPHTTPLIB_OPENSSL_SUPPORT;CRYPTOPP_STATIC_DEFINE;WIN32_LEAN_AND_MEAN;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;CPPHTTPLIB_OPENSSL_SUPPORT;CRYPTOPP_STATIC_DEFINE;WIN32_LEAN_AND_MEAN;NOMINMAX;GLM_ENABLE_EXPERIMENTAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>C:\Program Files\vcpkg-master\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)core;$(ProjectDir)core\render;$(ProjectDir)core\ui;$(ProjectDir)data;$(ProjectDir)object;$(ProjectDir)main;$(ProjectDir)BTEGeoConventor;C:\Program Files\vcpkg-master\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,46 +133,72 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>SFML_STATIC;NDEBUG;_CONSOLE;CPPHTTPLIB_OPENSSL_SUPPORT;CRYPTOPP_STATIC_DEFINE;WIN32_LEAN_AND_MEAN;NOMINMAX;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SFML_STATIC;NDEBUG;_CONSOLE;CPPHTTPLIB_OPENSSL_SUPPORT;CRYPTOPP_STATIC_DEFINE;WIN32_LEAN_AND_MEAN;NOMINMAX;GLM_ENABLE_EXPERIMENTAL;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)core;$(ProjectDir)core\render;$(ProjectDir)core\ui;$(ProjectDir)data;$(ProjectDir)object;$(ProjectDir)main;$(ProjectDir)BTEGeoConventor;C:\Program Files\vcpkg-master\installed\x64-windows-static\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>winmm.lib;sfml-graphics-s.lib
-;sfml-window-s.lib;
-sfml-system-s.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;libcrypto.lib;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\path\to\vcpkg\installed\x64-windows-static\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>winmm.lib;sfml-graphics-s.lib;sfml-window-s.lib;sfml-system-s.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2_32.lib;libssl.lib;libcrypto.lib;crypt32.lib;cryptopp.lib;libcurl.lib;bcrypt.lib;Normaliz.lib;iphlpapi.lib;Secur32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\vcpkg-master\installed\x64-windows-static\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BlockPalette.h" />
-    <ClInclude Include="BTEGeoConventor.h" />
-    <ClInclude Include="Chunk.h" />
-    <ClInclude Include="counters.h" />
-    <ClInclude Include="menu.h" />
-    <ClInclude Include="NBTManager.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="data\BlockPalette.h" />
+    <ClInclude Include="BTEGeoConventor\BTEGeoConventor.h" />
+    <ClInclude Include="data\Bounds.h" />
+    <ClInclude Include="data\ObjectTypes.h" />
+    <ClInclude Include="core\helper.h" />
+    <ClInclude Include="core\NBTManager.h" />
+    <ClInclude Include="core\schematic.h" />
+    <ClInclude Include="core\schematicTexture.h" />
+    <ClInclude Include="core\render\Camera.h" />
+    <ClInclude Include="data\Chunk.h" />
+    <ClInclude Include="data\TextureManager.h" />
+    <ClInclude Include="core\render\Viewer2D.h" />
+    <ClInclude Include="core\render\Viewer3D.h" />
+    <ClInclude Include="data\BlockData.h" />
+    <ClInclude Include="data\Data.h" />
+    <ClInclude Include="data\DataIO.h" />
+    <ClInclude Include="core\tileLoader.h" />
+    <ClInclude Include="core\tileMap.h" />
+    <ClInclude Include="object\Instance.h" />
+    <ClInclude Include="object\Object.h" />
+    <ClInclude Include="data\ObjectMeta.h" />
+    <ClInclude Include="object\counters.h" />
+    <ClInclude Include="core\ui\GuiManager.h" />
+    <ClInclude Include="main\menu.h" />
+    <ClInclude Include="main\redactor.h" />
     <ClInclude Include="resource5.h" />
-    <ClInclude Include="schematic.h" />
-    <ClInclude Include="redactor.h" />
-    <ClInclude Include="schematicTexture.h" />
-    <ClInclude Include="textureManager.h" />
-    <ClInclude Include="tileLoader.h" />
-    <ClInclude Include="tileMap.h" />
-    <ClInclude Include="GuiManager.h" />
+    <ClInclude Include="Simple2D.h" />
+    <ClInclude Include="Streamed2D.h" />
+    <ClInclude Include="WorldMap.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BlockPalette.cpp" />
-    <ClCompile Include="BTEGeoConventor.cpp" />
-    <ClCompile Include="Chunk.cpp" />
-    <ClCompile Include="counters.cpp" />
+    <ClCompile Include="data\BlockPalette.cpp" />
+    <ClCompile Include="BTEGeoConventor\BTEGeoConventor.cpp" />
+    <ClCompile Include="core\NBTManager.cpp" />
+    <ClCompile Include="core\schematic.cpp" />
+    <ClCompile Include="core\schematicTexture.cpp" />
+    <ClCompile Include="core\render\Camera.cpp" />
+    <ClCompile Include="data\Chunk.cpp" />
+    <ClCompile Include="data\TextureManager.cpp" />
+    <ClCompile Include="core\render\Viewer2D.cpp" />
+    <ClCompile Include="core\render\Viewer3D.cpp" />
+    <ClCompile Include="data\BlockData.cpp" />
+    <ClCompile Include="data\Data.cpp" />
+    <ClCompile Include="data\DataIO.cpp" />
+    <ClCompile Include="object\Instance.cpp" />
+    <ClCompile Include="object\Object.cpp" />
+    <ClCompile Include="object\counters.cpp" />
+    <ClCompile Include="core\ui\GuiManager.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="menu.cpp" />
-    <ClCompile Include="NBTManager.cpp" />
-    <ClCompile Include="schematic.cpp" />
-    <ClCompile Include="redactor.cpp" />
-    <ClCompile Include="GuiManager.cpp" />
-    <ClCompile Include="schematicTexture.cpp" />
-    <ClCompile Include="textureManager.cpp" />
+    <ClCompile Include="main\menu.cpp" />
+    <ClCompile Include="main\redactor.cpp" />
+    <ClCompile Include="Simple2D.cpp" />
+    <ClCompile Include="Streamed2D.cpp" />
+    <ClCompile Include="WorldMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MapEditor.rc" />
@@ -180,7 +206,17 @@ sfml-system-s.lib;opengl32.lib;gdi32.lib;user32.lib;shell32.lib;advapi32.lib;ws2
   <ItemGroup>
     <Image Include="..\x64\Debug\Resources\Image\Icon\icon.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\glm.1.0.3\build\native\glm.targets" Condition="Exists('..\packages\glm.1.0.3\build\native\glm.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>Данный проект ссылается на пакеты NuGet, отсутствующие на этом компьютере. Используйте восстановление пакетов NuGet, чтобы скачать их.  Дополнительную информацию см. по адресу: http://go.microsoft.com/fwlink/?LinkID=322105. Отсутствует следующий файл: {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\glm.1.0.3\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.1.0.3\build\native\glm.targets'))" />
+  </Target>
 </Project>

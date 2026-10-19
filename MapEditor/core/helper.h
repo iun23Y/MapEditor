@@ -2,6 +2,7 @@
 
 #include <string>
 #include <windows.h>
+#include <glm/mat2x2.hpp>
 #include <SFML/System/Vector3.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <algorithm>
@@ -77,3 +78,9 @@ struct Vector2iEqual {
         return lhs.x == rhs.x && lhs.y == rhs.y;
     }
 };
+
+inline sf::Vector2i toSFML(const glm::ivec2& v) { return { v.x, v.y }; }
+inline sf::Vector2f toSFMLf(const glm::ivec2& v) { return sf::Vector2f((float)v.x, (float)v.y); }
+inline sf::Vector2f toSFML(const glm::vec2& v) { return { v.x, v.y }; }
+inline glm::ivec2 toGLM(const sf::Vector2i& v) { return { v.x, v.y }; }
+inline glm::vec2 toGLM(const sf::Vector2f& v) { return { v.x, v.y }; }
