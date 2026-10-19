@@ -73,45 +73,17 @@ namespace {
     }
 }
 
-SchematicMap::SchematicMap(const std::string& filename, const std::string& worldDir) {
+SchematicMap::SchematicMap(const std::string& filename,const std::string& worldDir,const BlockPalette& palette) : m_palette(palette) {
     worldPath = fs::path(worldDir);
     chunksPath = worldPath / "chunks";
     fs::create_directories(chunksPath);
 
-    loadPalette();
     loadMeta();
 
     if (!filename.empty())
         loadFromFile(filename);
 }
 
-void SchematicMap::loadPalette() {
-    std::ifstream in(worldPath / "palette.dat");
-    if (!in) return;
-    std::string line;
-    while (std::getline(in, line)) {
-        if (line.empty()) continue;
-        const std::size_t space = line.find(' ');
-        if (space == std::string::npos) continue;
-        try {
-            const int id = std::stoi(line.substr(0, space));
-            const std::string name = line.substr(space + 1);
-            if (!name.empty()) palette.addBlock(id, name);
-        }
-        catch (...) {}
-    }
-}
-void SchematicMap::savePalette() const {
-    std::vector<std::pair<int, std::string>> entries(
-        palette.nameById.begin(), palette.nameById.end());
-    std::sort(entries.begin(), entries.end(),
-        [](const auto& a, const auto& b) { return a.first < b.first; });
-
-    std::ofstream out(worldPath / "palette.dat", std::ios::trunc);
-    if (!out) return;
-    for (const auto& [id, name] : entries)
-        out << id << ' ' << name << '\n';
-}
 void SchematicMap::loadMeta() {
     struct MetaData { int32_t hasBounds; int32_t x1, y1, z1; int32_t x2, y2, z2; };
     std::ifstream in(worldPath / "meta.dat", std::ios::binary);
@@ -134,9 +106,7 @@ void SchematicMap::saveMeta() const {
     out.write(reinterpret_cast<const char*>(&m), sizeof(m));
 }
 void SchematicMap::saveWorldState() const {
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    savePalette();
-    saveMeta();
+    std::lock_guard<std::recursive_mutex> lock(mutex);    saveMeta();
     const_cast<SchematicMap*>(this)->saveDirtyChunks();
 }
 
@@ -498,22 +468,26 @@ void SchematicMap::loadFromFile(const std::string& filename) {
     std::unordered_map<int, int> idRemap;
 
     auto paletteIt = blocks->children.find("Palette");
-    if (paletteIt != blocks->children.end() && paletteIt->second->type == TagType::TAG_COMPOUND) {
+    if (paletteIt != blocks->children.end() &&
+        paletteIt->second->type == TagType::TAG_COMPOUND) {
+
         auto pal = std::dynamic_pointer_cast<TagCompound>(paletteIt->second);
+
         for (const auto& [name, tag] : pal->children) {
             if (tag->type != TagType::TAG_INT) continue;
             if (name == "minecraft:__reserved__") continue;
 
             const int schematicId = std::dynamic_pointer_cast<TagInt>(tag)->value;
+
             int worldId;
-            if (palette.hasBlock(name)) {
-                worldId = palette.getId(name);
+            if (m_palette.hasBlock(name)) {
+                worldId = m_palette.getId(name);
             }
             else {
-                worldId = (int)palette.nameById.size();
-                while (palette.hasBlock(worldId)) ++worldId;
-                palette.addBlock(worldId, name);
+                std::cerr << "Unknown block: " << name << " ? missing\n";
+                worldId = 1;
             }
+
             idRemap[schematicId] = worldId;
         }
     }
@@ -548,9 +522,9 @@ void SchematicMap::loadFromFile(const std::string& filename) {
         hasBounds = true;
     }
     else {
-        Pos1.x = std::min(Pos1.x, offsetX);
-        Pos1.y = std::min(Pos1.y, offsetY);
-        Pos1.z = std::min(Pos1.z, offsetZ);
+        Pos1.x = std::max(Pos1.x, offsetX);
+        Pos1.y = std::max(Pos1.y, offsetY);
+        Pos1.z = std::max(Pos1.z, offsetZ);
         Pos2.x = std::max(Pos2.x, offsetX + width);
         Pos2.y = std::max(Pos2.y, offsetY + height);
         Pos2.z = std::max(Pos2.z, offsetZ + length);
@@ -560,7 +534,7 @@ void SchematicMap::loadFromFile(const std::string& filename) {
     auto indices = decodeBlockIndices(rawData, volume);
 
     std::unordered_set<int> ignored;
-    for (const auto& [id, name] : palette.nameById)
+    for (const auto& [id, name] : m_palette.nameById)
         if (name == "minecraft:air" || name == "air" ||
             name == "minecraft:__reserved__" || name == "__reserved__")
             ignored.insert(id);
@@ -628,7 +602,7 @@ void SchematicMap::exportToSchematic(const std::string& baseName, const std::str
 
             for (const auto& b : blocks) {
                 if (globalToLocal.count(b.blockId)) continue;
-                std::string name = palette.getName(b.blockId);
+                std::string name = m_palette.getName(b.blockId);
                 if (name.empty()) globalToLocal[b.blockId] = 0;
                 else {
                     globalToLocal[b.blockId] = (int32_t)paletteNames.size();

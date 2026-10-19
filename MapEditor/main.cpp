@@ -1,33 +1,13 @@
-﻿#include "Menu.h"
+﻿#include "main\Menu.h"
 #include <iostream>
-#include "schematic.h"
+#include "core\schematic.h"
 #include <filesystem>
 #include <windows.h>
-#include "BTEGeoConventor.h"
-
-class Redactor {
-private:
-    sf::View redactorView;
-    sf::View uiView;
-
-	sf::RenderWindow window;
-	SchematicMap map;
-public:
-    void updateUI() {
-		window.setView(uiView);
-
-
-
-		window.setView(redactorView);
-    }
-};
-
 
 int runApplication() {
     try {
         Menu menu(800, 600);
         menu.run();
-        // After exiting the UI, remove runtime world directory placed next to the exe
         char buffer[MAX_PATH];
         GetModuleFileNameA(NULL, buffer, MAX_PATH);
         std::string path(buffer);

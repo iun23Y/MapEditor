@@ -5,6 +5,20 @@ void BlockPalette::addBlock(int id, const std::string& name) {
     if (idByName.find(name) != idByName.end() || nameById.find(id) != nameById.end()) return;
     nameById[id] = name;
     idByName[name] = id;
+    nextId = id + 1;
+}
+int BlockPalette::addBlock(const std::string& name) {
+    auto it = idByName.find(name);
+    if (it != idByName.end())
+        return it->second;
+
+    while (nameById.count(nextId))
+        ++nextId;
+
+    int id = nextId++;
+    nameById[id] = name;
+    idByName[name] = id;
+    return id;
 }
 bool BlockPalette::hasBlock(int id) const {
     return nameById.find(id) != nameById.end();

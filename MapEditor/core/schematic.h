@@ -25,7 +25,6 @@ public:
     struct RegionRecord {
         int32_t x, z, id;
     };
-
     struct RegionKey {
         int x, y, z;
         bool operator==(const RegionKey& o) const { return x == o.x && y == o.y && z == o.z; }
@@ -38,7 +37,6 @@ public:
             return s;
         }
     };
-
     struct RegionBlock {
         int32_t x, y, z;
         int32_t blockId;
@@ -57,7 +55,7 @@ public:
         }
     };
 
-    SchematicMap(const std::string& filename, const std::string& worldDir);
+    SchematicMap(const std::string& filename, const std::string& worldDir, const BlockPalette& palette);
 
     sf::Vector2f worldToLocal(const sf::Vector2f& worldPos) const;
     sf::Vector2f localToWorld(const sf::Vector2f& localPos) const;
@@ -67,9 +65,6 @@ public:
     sf::Vector3i getPos1() const { return Pos1; }
     sf::Vector3i getPos2() const { return Pos2; }
     bool         getHasBounds() const { return hasBounds; }
-
-    BlockPalette& getPalette() { return palette; }
-    const BlockPalette& getPalette() const { return palette; }
 
     std::vector<RegionBlock> getRegionBlocks(int regionX, int regionY, int regionZ) const;
     std::vector<RegionBlock> getBlocksInArea(int minX, int minY, int minZ,
@@ -104,18 +99,16 @@ private:
 
     mutable std::recursive_mutex mutex;
 
-    BlockPalette palette;
+    const BlockPalette& m_palette;
     sf::Vector3i Pos1{ 0, 0, 0 };
     sf::Vector3i Pos2{ 0, 0, 0 };
-    bool         hasBounds = false;
+    bool hasBounds = false;
 
     using ChunkPtr = std::shared_ptr<Chunk>;
     mutable std::unordered_map<ChunkKey, ChunkPtr, ChunkKeyHash> chunkCache;
     mutable std::unordered_map<ChunkKey, std::list<ChunkKey>::iterator, ChunkKeyHash> lruPos;
     mutable std::list<ChunkKey> lruList;
 
-    void loadPalette();
-    void savePalette() const;
     void loadMeta();
     void saveMeta() const;
     void extendBounds(int x, int y, int z);

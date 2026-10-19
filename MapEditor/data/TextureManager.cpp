@@ -1,15 +1,22 @@
-#include "textureManager.h"
-#include "helper.h"
+#include "TextureManager.h"
+
 #include <fstream>
+#include <algorithm>
+#include <vector>
+
 #include <nlohmann/json.hpp>
+
+#include "helper.h"
+#include "BlockPalette.h"
+
 using namespace nlohmann;
 
-textureManager::textureManager() {
+TextureManager::TextureManager() {
     pathJson = getExeDirectory() + "Resources\\blocks.json";
     pathTextures = getExeDirectory() + "Resources\\Textures";
     loadData();
 }
-void textureManager::buildAtlas(const BlockPalette& palette) {
+void TextureManager::buildAtlas(const BlockPalette& palette) {
     sf::Image atlas({ ATLAS_W, ATLAS_H }, sf::Color::Transparent);
 
     sf::Image missing({ 16, 16 }, sf::Color::Magenta);
@@ -54,8 +61,22 @@ void textureManager::buildAtlas(const BlockPalette& palette) {
     atlasTexture.setSmooth(false);
     atlasTexture.setRepeated(false);
 }
+BlockPalette TextureManager::buildPalette() const {
+    BlockPalette palette;
+    palette.addBlock(0, "minecraft:air");
+    palette.addBlock(1, "minecraft:missing");
 
-bool textureManager::loadData() {
+    std::vector<std::string> names;
+    names.reserve(blockTypes.size());
+    for (const auto& [name, _] : blockTypes)
+        names.push_back(name);
+    std::sort(names.begin(), names.end());
+
+    for (const auto& name : names)
+        palette.addBlock(name);
+    return palette;
+}
+bool TextureManager::loadData() {
     std::ifstream file(pathJson);
     if (!file.is_open()) return false;
     json data;
@@ -129,27 +150,27 @@ bool textureManager::loadData() {
     return true;
 }
 
-uint16_t textureManager::getAtlasSlot(int blockId) const {
+uint16_t TextureManager::getAtlasSlot(int blockId) const {
     if (blockId < 0 || blockId >= (int)idToSlot.size()) return 1;
     return idToSlot[blockId];
 }
-std::string textureManager::getBlockType(const std::string& blockName) const {
+std::string TextureManager::getBlockType(const std::string& blockName) const {
     auto it = blockTypes.find(blockName);
     return it == blockTypes.end() ? "cube" : it->second;
 }
-const sf::Texture* textureManager::getTexture(const std::string& blockName) const {
+const sf::Texture* TextureManager::getTexture(const std::string& blockName) const {
     auto it = textures.find(blockName);
     if (it == textures.end())
         return nullptr;
     return &it->second;
 }
-const sf::Image* textureManager::getImage(const std::string& blockName) const {
+const sf::Image* TextureManager::getImage(const std::string& blockName) const {
     auto it = images.find(blockName);
     if (it == images.end())
         return nullptr;
     return &it->second;
 }
-sf::Color textureManager::getColor(const std::string& blockName) const {
+sf::Color TextureManager::getColor(const std::string& blockName) const {
     auto it = colors.find(blockName);
     if (it == colors.end())
         return sf::Color::Magenta;

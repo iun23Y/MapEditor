@@ -164,7 +164,6 @@ private:
     void buildRectangle(schematicTexture* schemTex) {
         if (points.size() != 4) return;
 
-        // Генерация контура
         std::vector<sf::Vector2i> borderLocal;
         for (size_t i = 0; i < 4; ++i) {
             size_t j = (i + 1) % 4;
@@ -208,7 +207,6 @@ private:
             blockId = newId;
         }
 
-        // Подготовка блоков для установки
         std::vector<std::tuple<int, int, int, int>> blocksToSet;
         blocksToSet.reserve(borderLocal.size() * contourHeight);
         int maxSurfaceY = getMaxSurfaceHeightInArea(xMin, xMax, zMin, zMax);
@@ -222,7 +220,7 @@ private:
             int surfaceY = getSurfaceHeight(b.x, b.y);
             for (int y = surfaceY + 1; y <= topY; ++y) {
                 blocksToSet.emplace_back(absX, y, absZ, blockId);
-                placedBlocks.emplace_back(b.x, y, b.y); // локальные координаты
+                placedBlocks.emplace_back(b.x, y, b.y);
             }
             schemTex->updateRegion({ absX, absZ });
         }

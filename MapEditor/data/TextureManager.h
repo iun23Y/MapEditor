@@ -4,7 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include "BlockPalette.h"
 
-class textureManager {
+class TextureManager {
 private:
     std::unordered_map<std::string, sf::Texture> textures;
     std::unordered_map<std::string, sf::Image> images;
@@ -19,7 +19,7 @@ private:
 
     bool loadData();
 public:
-    textureManager();
+    TextureManager();
     void buildAtlas(const BlockPalette& palette);
     const sf::Texture& getAtlas() const { return atlasTexture; }
     uint16_t getAtlasSlot(int blockId) const;
@@ -29,6 +29,8 @@ public:
     static constexpr int ROWS = 64;
     static constexpr int ATLAS_W = COLS * TILE;
     static constexpr int ATLAS_H = ROWS * TILE;
+
+    BlockPalette buildPalette() const;
 
     std::string getBlockType(const std::string& blockName) const;
     const sf::Texture* getTexture(const std::string& blockName) const;

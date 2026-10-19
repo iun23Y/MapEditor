@@ -13,111 +13,222 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Исходные файлы\System">
-      <UniqueIdentifier>{d96f42fb-cc34-4a72-906d-bac9bf3cfa1d}</UniqueIdentifier>
+    <Filter Include="Файлы заголовков\core">
+      <UniqueIdentifier>{7e26f838-a207-44d7-bd91-24d1c4798ad6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Исходные файлы\Main">
-      <UniqueIdentifier>{7754c18b-b4e0-4b98-a8c1-b0d90b436379}</UniqueIdentifier>
+    <Filter Include="Файлы заголовков\object">
+      <UniqueIdentifier>{5824da8b-efd5-42ef-8e35-019e974a97f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Исходные файлы\Utils">
-      <UniqueIdentifier>{bcb5d7be-8006-44f7-8545-21f164552d0f}</UniqueIdentifier>
+    <Filter Include="Файлы заголовков\data">
+      <UniqueIdentifier>{867b8fc9-0680-4166-9b3b-ff055e68c6b6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Исходные файлы\Object">
-      <UniqueIdentifier>{b6d7d5f3-1c2f-499f-a413-c7d704b7ea0e}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\core">
+      <UniqueIdentifier>{5e128d3e-d3af-4b3b-8f15-3a8d934ccaa3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы заголовков\Main">
-      <UniqueIdentifier>{34b1f0c4-4b05-4a05-8eae-bc8313f6ff80}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\data">
+      <UniqueIdentifier>{8c0dddea-e9f7-41db-b37d-70708c5e7289}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы заголовков\System">
-      <UniqueIdentifier>{51a12e55-0ba4-426c-bd74-f7b057aba54a}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\object">
+      <UniqueIdentifier>{405e5cdf-efa5-4844-8c2b-a45711163ffe}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы заголовков\Utils">
-      <UniqueIdentifier>{f9a1c6e9-c98e-4149-bd43-bbc17e99df87}</UniqueIdentifier>
+    <Filter Include="Файлы заголовков\ui">
+      <UniqueIdentifier>{e831d299-f1b8-42fb-b463-03e73e52e166}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы заголовков\Object">
-      <UniqueIdentifier>{e168acd4-3c03-4179-97dc-ba1cc93b70eb}</UniqueIdentifier>
+    <Filter Include="Исходные файлы\core\render">
+      <UniqueIdentifier>{ccb4e501-bad7-4465-bd9a-e8d231b87ccd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\core\render">
+      <UniqueIdentifier>{53c20a2e-6f4d-46af-8f78-579ddfd36662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\NBT">
+      <UniqueIdentifier>{a6ca58c9-87ea-436d-b15b-011c09ae550c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\BTEGeoConventor">
+      <UniqueIdentifier>{10f068ba-caa9-4351-9c69-92a4976d8b00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\ui">
+      <UniqueIdentifier>{ed9fb6a4-b257-4d06-bfed-151c354e5218}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\NBT">
+      <UniqueIdentifier>{b0dc2468-5fc9-4563-8d61-afd829e7548a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\BTEGeoConventor">
+      <UniqueIdentifier>{bbdf1c99-9dc5-4c4c-b984-9c258d323104}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\app">
+      <UniqueIdentifier>{5efd462e-ce37-47b1-9436-89a98e8a41c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\app">
+      <UniqueIdentifier>{f6ae16af-e429-4722-a84d-bd62d1e6a364}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\core\render\2D">
+      <UniqueIdentifier>{fc44efd6-f3e2-4d91-880c-3fa06436e495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\core\render\2D">
+      <UniqueIdentifier>{9ee76270-dc47-476f-85b6-35caa3c8e3ee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BTEGeoConventor.h">
-      <Filter>Файлы заголовков\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="counters.h">
-      <Filter>Файлы заголовков\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="menu.h">
-      <Filter>Файлы заголовков\Main</Filter>
-    </ClInclude>
-    <ClInclude Include="redactor.h">
-      <Filter>Файлы заголовков\Main</Filter>
-    </ClInclude>
-    <ClInclude Include="schematic.h">
-      <Filter>Файлы заголовков\System</Filter>
-    </ClInclude>
-    <ClInclude Include="schematicTexture.h">
-      <Filter>Файлы заголовков\System</Filter>
-    </ClInclude>
-    <ClInclude Include="tileMap.h">
-      <Filter>Файлы заголовков\System</Filter>
-    </ClInclude>
-    <ClInclude Include="tileLoader.h">
-      <Filter>Файлы заголовков\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="resource5.h">
-      <Filter>Файлы заголовков\System</Filter>
+      <Filter>Файлы ресурсов</Filter>
     </ClInclude>
-    <ClInclude Include="textureManager.h">
-      <Filter>Файлы заголовков\System</Filter>
+    <ClInclude Include="data\BlockData.h">
+      <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
-    <ClInclude Include="GuiManager.h">
-      <Filter>Файлы заголовков\System</Filter>
+    <ClInclude Include="data\BlockPalette.h">
+      <Filter>Файлы заголовков\core</Filter>
     </ClInclude>
-    <ClInclude Include="NBTManager.h">
-      <Filter>Файлы заголовков\Utils</Filter>
+    <ClInclude Include="data\Bounds.h">
+      <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
-    <ClInclude Include="Chunk.h">
-      <Filter>Файлы заголовков\System</Filter>
+    <ClInclude Include="BTEGeoConventor\BTEGeoConventor.h">
+      <Filter>Файлы заголовков\BTEGeoConventor</Filter>
     </ClInclude>
-    <ClInclude Include="BlockPalette.h">
+    <ClInclude Include="core\render\Camera.h">
+      <Filter>Файлы заголовков\core\render</Filter>
+    </ClInclude>
+    <ClInclude Include="data\Chunk.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="object\counters.h">
+      <Filter>Файлы заголовков\object</Filter>
+    </ClInclude>
+    <ClInclude Include="data\Data.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\DataIO.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="core\ui\GuiManager.h">
+      <Filter>Файлы заголовков\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="core\helper.h">
+      <Filter>Файлы заголовков\core</Filter>
+    </ClInclude>
+    <ClInclude Include="object\Instance.h">
+      <Filter>Файлы заголовков\object</Filter>
+    </ClInclude>
+    <ClInclude Include="main\menu.h">
+      <Filter>Файлы заголовков\app</Filter>
+    </ClInclude>
+    <ClInclude Include="object\Object.h">
+      <Filter>Файлы заголовков\object</Filter>
+    </ClInclude>
+    <ClInclude Include="data\ObjectMeta.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="main\redactor.h">
+      <Filter>Файлы заголовков\app</Filter>
+    </ClInclude>
+    <ClInclude Include="core\schematicTexture.h">
+      <Filter>Файлы заголовков\core</Filter>
+    </ClInclude>
+    <ClInclude Include="data\TextureManager.h">
+      <Filter>Файлы заголовков\core</Filter>
+    </ClInclude>
+    <ClInclude Include="core\tileLoader.h">
+      <Filter>Файлы заголовков\core</Filter>
+    </ClInclude>
+    <ClInclude Include="core\tileMap.h">
+      <Filter>Файлы заголовков\core</Filter>
+    </ClInclude>
+    <ClInclude Include="core\render\Viewer3D.h">
+      <Filter>Файлы заголовков\core\render</Filter>
+    </ClInclude>
+    <ClInclude Include="core\NBTManager.h">
+      <Filter>Файлы заголовков\NBT</Filter>
+    </ClInclude>
+    <ClInclude Include="core\schematic.h">
+      <Filter>Файлы заголовков\object</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldMap.h">
       <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="data\ObjectTypes.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Файлы заголовков\core</Filter>
+    </ClInclude>
+    <ClInclude Include="core\render\Viewer2D.h">
+      <Filter>Файлы заголовков\core\render\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Simple2D.h">
+      <Filter>Файлы заголовков\core\render\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Streamed2D.h">
+      <Filter>Файлы заголовков\core\render\2D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="schematic.cpp">
-      <Filter>Исходные файлы\System</Filter>
+    <ClCompile Include="data\BlockData.cpp">
+      <Filter>Исходные файлы\data</Filter>
     </ClCompile>
-    <ClCompile Include="textureManager.cpp">
-      <Filter>Исходные файлы\System</Filter>
+    <ClCompile Include="BTEGeoConventor\BTEGeoConventor.cpp">
+      <Filter>Исходные файлы\BTEGeoConventor</Filter>
     </ClCompile>
-    <ClCompile Include="GuiManager.cpp">
-      <Filter>Исходные файлы\System</Filter>
+    <ClCompile Include="object\Object.cpp">
+      <Filter>Исходные файлы\object</Filter>
     </ClCompile>
-    <ClCompile Include="redactor.cpp">
-      <Filter>Исходные файлы\Main</Filter>
+    <ClCompile Include="object\Instance.cpp">
+      <Filter>Исходные файлы\object</Filter>
     </ClCompile>
-    <ClCompile Include="menu.cpp">
-      <Filter>Исходные файлы\Main</Filter>
+    <ClCompile Include="data\BlockPalette.cpp">
+      <Filter>Исходные файлы\core</Filter>
     </ClCompile>
-    <ClCompile Include="schematicTexture.cpp">
-      <Filter>Исходные файлы\System</Filter>
+    <ClCompile Include="core\render\Camera.cpp">
+      <Filter>Исходные файлы\core\render</Filter>
     </ClCompile>
-    <ClCompile Include="BTEGeoConventor.cpp">
-      <Filter>Исходные файлы\Utils</Filter>
+    <ClCompile Include="data\Chunk.cpp">
+      <Filter>Исходные файлы\data</Filter>
     </ClCompile>
-    <ClCompile Include="counters.cpp">
-      <Filter>Исходные файлы\Object</Filter>
+    <ClCompile Include="object\counters.cpp">
+      <Filter>Исходные файлы\object</Filter>
     </ClCompile>
-    <ClCompile Include="NBTManager.cpp">
-      <Filter>Исходные файлы\Utils</Filter>
+    <ClCompile Include="data\Data.cpp">
+      <Filter>Исходные файлы\data</Filter>
     </ClCompile>
-    <ClCompile Include="Chunk.cpp">
-      <Filter>Исходные файлы\System</Filter>
+    <ClCompile Include="data\DataIO.cpp">
+      <Filter>Исходные файлы\data</Filter>
     </ClCompile>
-    <ClCompile Include="BlockPalette.cpp">
+    <ClCompile Include="core\ui\GuiManager.cpp">
+      <Filter>Исходные файлы\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="main\menu.cpp">
+      <Filter>Исходные файлы\app</Filter>
+    </ClCompile>
+    <ClCompile Include="main\redactor.cpp">
+      <Filter>Исходные файлы\app</Filter>
+    </ClCompile>
+    <ClCompile Include="core\NBTManager.cpp">
+      <Filter>Исходные файлы\NBT</Filter>
+    </ClCompile>
+    <ClCompile Include="data\TextureManager.cpp">
+      <Filter>Исходные файлы\core</Filter>
+    </ClCompile>
+    <ClCompile Include="core\schematicTexture.cpp">
+      <Filter>Исходные файлы\core</Filter>
+    </ClCompile>
+    <ClCompile Include="core\schematic.cpp">
+      <Filter>Исходные файлы\object</Filter>
+    </ClCompile>
+    <ClCompile Include="core\render\Viewer3D.cpp">
+      <Filter>Исходные файлы\core\render</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMap.cpp">
       <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="core\render\Viewer2D.cpp">
+      <Filter>Исходные файлы\core\render\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Simple2D.cpp">
+      <Filter>Исходные файлы\core\render\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Streamed2D.cpp">
+      <Filter>Исходные файлы\core\render\2D</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -129,5 +240,8 @@
     <Image Include="..\x64\Debug\Resources\Image\Icon\icon.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
