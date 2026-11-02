@@ -30,9 +30,9 @@ std::vector<uint8_t> Chunk::encodeRLE() const {
 
     size_t i = 0;
     while (i < VOLUME) {
-        const uint16_t v = blocks[i];
+        const uint16_t v = m_data[i];
         size_t j = i + 1;
-        while (j < VOLUME && blocks[j] == v) ++j;
+        while (j < VOLUME && m_data[j] == v) ++j;
 
         writeVarint(out, static_cast<uint32_t>(j - i));
         writeVarint(out, v);
@@ -42,8 +42,8 @@ std::vector<uint8_t> Chunk::encodeRLE() const {
 }
 
 bool Chunk::decodeRLE(const std::vector<uint8_t>& data) {
-    std::fill(blocks.begin(), blocks.end(), AIR);
-    maxY_ = -1;
+    std::fill(m_data.begin(), m_data.end(), AIR);
+    m_maxY = INT_MIN;
     maxYTight_ = false;
 
     const uint8_t* p = data.data();
@@ -57,7 +57,7 @@ bool Chunk::decodeRLE(const std::vector<uint8_t>& data) {
             if (count == 0 || i + count > VOLUME) return false;
 
             for (uint32_t k = 0; k < count; ++k)
-                blocks[i + k] = static_cast<uint16_t>(id);
+                m_data[i + k] = static_cast<uint16_t>(id);
             i += count;
         }
         if (i != VOLUME) return false;
@@ -66,6 +66,6 @@ bool Chunk::decodeRLE(const std::vector<uint8_t>& data) {
         return false;
     }
     recomputeMaxY();
-    dirty = false;
+    m_dirty = false;
     return true;
 }

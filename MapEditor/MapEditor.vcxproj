@@ -144,6 +144,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BigObject.h" />
+    <ClInclude Include="ChunkData.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="data\BlockPalette.h" />
     <ClInclude Include="BTEGeoConventor\BTEGeoConventor.h" />
@@ -160,9 +162,10 @@
     <ClInclude Include="core\render\Viewer3D.h" />
     <ClInclude Include="data\BlockData.h" />
     <ClInclude Include="data\Data.h" />
-    <ClInclude Include="data\DataIO.h" />
+    <ClInclude Include="data\DataPersistence.h" />
     <ClInclude Include="core\tileLoader.h" />
     <ClInclude Include="core\tileMap.h" />
+    <ClInclude Include="ObjectPriority.h" />
     <ClInclude Include="object\Instance.h" />
     <ClInclude Include="object\Object.h" />
     <ClInclude Include="data\ObjectMeta.h" />
@@ -170,12 +173,17 @@
     <ClInclude Include="core\ui\GuiManager.h" />
     <ClInclude Include="main\menu.h" />
     <ClInclude Include="main\redactor.h" />
+    <ClInclude Include="RenderData.h" />
     <ClInclude Include="resource5.h" />
+    <ClInclude Include="Side.h" />
     <ClInclude Include="Simple2D.h" />
+    <ClInclude Include="SmallObject.h" />
     <ClInclude Include="Streamed2D.h" />
     <ClInclude Include="WorldMap.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BigObject.cpp" />
+    <ClCompile Include="ChunkData.cpp" />
     <ClCompile Include="data\BlockPalette.cpp" />
     <ClCompile Include="BTEGeoConventor\BTEGeoConventor.cpp" />
     <ClCompile Include="core\NBTManager.cpp" />
@@ -188,7 +196,7 @@
     <ClCompile Include="core\render\Viewer3D.cpp" />
     <ClCompile Include="data\BlockData.cpp" />
     <ClCompile Include="data\Data.cpp" />
-    <ClCompile Include="data\DataIO.cpp" />
+    <ClCompile Include="data\DataPersistence.cpp" />
     <ClCompile Include="object\Instance.cpp" />
     <ClCompile Include="object\Object.cpp" />
     <ClCompile Include="object\counters.cpp" />
@@ -196,7 +204,9 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main\menu.cpp" />
     <ClCompile Include="main\redactor.cpp" />
+    <ClCompile Include="RenderData.cpp" />
     <ClCompile Include="Simple2D.cpp" />
+    <ClCompile Include="SmallObject.cpp" />
     <ClCompile Include="Streamed2D.cpp" />
     <ClCompile Include="WorldMap.cpp" />
   </ItemGroup>

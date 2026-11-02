@@ -1,45 +1,38 @@
 #pragma once
 #include "data/ObjectTypes.h"
 #include "data/Bounds.h"
-#include "data/BlockData.h"
 #include <string>
 #include <glm/glm.hpp>
+#include "ObjectPriority.h"
 
-class Object {
+//Abstract
+class Object
+{
 public:
-    Object() = default;
-    Object(ObjectID id, ObjectType type)
-        : m_id(id), m_type(type) {
-    }
+    Object(ObjectID id, ObjectType type) : m_id(id), m_type(type) {}
     virtual ~Object() = default;
 
     ObjectID id() const { return m_id; }
-    ObjectType type() const { return m_type; }
     int layer() const { return m_layer; }
-    int priority() const { return m_priority; }
+    ObjectPriority priority() const { return m_priority; }
 
     glm::ivec3 position{ 0 };
 
-    BlockData& data() { return m_data; }
-    const BlockData& data() const { return m_data; }
-
-    Bounds bounds() const {
-        if (m_data.empty()) return Bounds{ glm::ivec3(0), glm::ivec3(0) };
-        return Bounds(m_data.minCorner(), m_data.maxCorner());
-    }
+    virtual Bounds bounds() const = 0;
 
     void setId(ObjectID id) { m_id = id; }
-    void setType(ObjectType t) { m_type = t; }
     void setLayer(int l) { m_layer = l; }
-    void setPriority(int p) { m_priority = p; }
+    void setPriority(ObjectPriority p) { m_priority = p; }
     void setName(const std::string& n) { m_name = n; }
     const std::string& name() const { return m_name; }
 
+    bool isType(ObjectType type) const;
+	void setType(ObjectType type) { m_type = type; }
 protected:
     ObjectID m_id = NO_OBJECT;
-    ObjectType m_type = ObjectType::Unknown;
     int m_layer = 0;
-    int m_priority = 0;
+    ObjectPriority m_priority = ObjectPriority::Medium;
     std::string m_name;
-    BlockData m_data;
+
+    ObjectType m_type;
 };

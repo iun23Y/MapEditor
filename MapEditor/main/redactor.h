@@ -4,7 +4,7 @@
 #include "tileMap.h"
 #include "GuiManager.h"
 #include "helper.h"
-#include "textureManager.h"
+#include "TextureManager.h"
 #include "counters.h"
 #include "schematicTexture.h"
 
@@ -64,7 +64,7 @@ private:
 
     std::unique_ptr<SchematicMap> schem;
     BlockPalette pallete;
-	textureManager texManager;
+	TextureManager textureManager;
 	std::optional<schematicTexture> schemTexture;
     sf::RenderWindow window;
     sf::View redactorView;

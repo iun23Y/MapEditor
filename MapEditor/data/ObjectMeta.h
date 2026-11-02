@@ -5,7 +5,6 @@
 
 struct ObjectMeta {
     ObjectID id;
-    ObjectType type;
     glm::ivec3 position;
     int layer = 0;
     int priority = 0;

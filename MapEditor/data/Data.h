@@ -8,6 +8,11 @@
 #include <unordered_map>
 #include <vector>
 
+enum class ObjectRenderType {
+    Renderer,
+    NonRenderer
+};
+
 class Data {
 public:
     Data() = default;
@@ -15,10 +20,18 @@ public:
     BlockPalette& palette() { return m_palette; }
     const BlockPalette& palette() const { return m_palette; }
 
-    ObjectID add(std::unique_ptr<Object> obj) {
-        ObjectID id = nextId++;
+    ObjectID add(std::unique_ptr<Object> obj, ObjectRenderType type) {
+        if (!obj) return NO_OBJECT;
+        const ObjectID id = nextId++;
         obj->setId(id);
-        m_objects[id] = std::move(obj);
+        switch (type) {
+        case ObjectRenderType::Renderer:
+            m_renderObjects.emplace(id, std::move(obj));
+            break;
+        case ObjectRenderType::NonRenderer:
+            m_objects.emplace(id, std::move(obj));
+            break;
+        }
         return id;
     }
 
@@ -27,10 +40,11 @@ public:
 
     void remove(ObjectID id) {
         m_objects.erase(id);
+        m_renderObjects.erase(id);
     }
 
     ObjectID spawn(const Instance& inst) {
-        ObjectID id = nextId++;
+        const ObjectID id = nextId++;
         Instance copy = inst;
         copy.id = id;
         m_instances.push_back(copy);
@@ -49,23 +63,32 @@ public:
     auto& objects() { return m_objects; }
     const auto& objects() const { return m_objects; }
 
+    auto& renderObjects() { return m_renderObjects; }
+    const auto& renderObjects() const { return m_renderObjects; }
+
     ObjectID nextObjectId() const { return nextId; }
     void setNextObjectId(ObjectID id) { nextId = id; }
 
 private:
     Object* find(ObjectID id) {
-        auto it = m_objects.find(id);
-        return it == m_objects.end() ? nullptr : it->second.get();
+        if (auto it = m_objects.find(id); it != m_objects.end())
+            return it->second.get();
+        if (auto it = m_renderObjects.find(id); it != m_renderObjects.end())
+            return it->second.get();
+        return nullptr;
     }
     const Object* find(ObjectID id) const {
-        auto it = m_objects.find(id);
-        return it == m_objects.end() ? nullptr : it->second.get();
+        if (auto it = m_objects.find(id); it != m_objects.end())
+            return it->second.get();
+        if (auto it = m_renderObjects.find(id); it != m_renderObjects.end())
+            return it->second.get();
+        return nullptr;
     }
 
     BlockPalette m_palette;
     ObjectID nextId = 1;
 
     std::unordered_map<ObjectID, std::unique_ptr<Object>> m_objects;
-    std::unordered_map<ObjectID, std::unique_ptr<Object>> m_RenderObjects;
+    std::unordered_map<ObjectID, std::unique_ptr<Object>> m_renderObjects;
     std::vector<Instance> m_instances;
 };
