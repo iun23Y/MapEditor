@@ -46,9 +46,6 @@
     <Filter Include="Исходные файлы\BTEGeoConventor">
       <UniqueIdentifier>{10f068ba-caa9-4351-9c69-92a4976d8b00}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Исходные файлы\ui">
-      <UniqueIdentifier>{ed9fb6a4-b257-4d06-bfed-151c354e5218}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы заголовков\NBT">
       <UniqueIdentifier>{b0dc2468-5fc9-4563-8d61-afd829e7548a}</UniqueIdentifier>
     </Filter>
@@ -66,6 +63,15 @@
     </Filter>
     <Filter Include="Исходные файлы\core\render\2D">
       <UniqueIdentifier>{9ee76270-dc47-476f-85b6-35caa3c8e3ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\ui">
+      <UniqueIdentifier>{ed9fb6a4-b257-4d06-bfed-151c354e5218}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\object\ObjectClass">
+      <UniqueIdentifier>{4c9c2880-0f4d-469f-b33e-4a39362574ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\object\ObjectClass">
+      <UniqueIdentifier>{b116252a-8553-4b5a-abc1-3c14791cd3ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -96,7 +102,7 @@
     <ClInclude Include="data\Data.h">
       <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
-    <ClInclude Include="data\DataIO.h">
+    <ClInclude Include="data\DataPersistence.h">
       <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
     <ClInclude Include="core\ui\GuiManager.h">
@@ -105,14 +111,8 @@
     <ClInclude Include="core\helper.h">
       <Filter>Файлы заголовков\core</Filter>
     </ClInclude>
-    <ClInclude Include="object\Instance.h">
-      <Filter>Файлы заголовков\object</Filter>
-    </ClInclude>
     <ClInclude Include="main\menu.h">
       <Filter>Файлы заголовков\app</Filter>
-    </ClInclude>
-    <ClInclude Include="object\Object.h">
-      <Filter>Файлы заголовков\object</Filter>
     </ClInclude>
     <ClInclude Include="data\ObjectMeta.h">
       <Filter>Файлы заголовков\data</Filter>
@@ -141,9 +141,6 @@
     <ClInclude Include="core\schematic.h">
       <Filter>Файлы заголовков\object</Filter>
     </ClInclude>
-    <ClInclude Include="WorldMap.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="data\ObjectTypes.h">
       <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
@@ -159,6 +156,33 @@
     <ClInclude Include="Streamed2D.h">
       <Filter>Файлы заголовков\core\render\2D</Filter>
     </ClInclude>
+    <ClInclude Include="WorldMap.h">
+      <Filter>Файлы заголовков\object</Filter>
+    </ClInclude>
+    <ClInclude Include="Side.h">
+      <Filter>Файлы заголовков\core\render\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkData.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="BigObject.h">
+      <Filter>Файлы заголовков\object\ObjectClass</Filter>
+    </ClInclude>
+    <ClInclude Include="object\Object.h">
+      <Filter>Файлы заголовков\object\ObjectClass</Filter>
+    </ClInclude>
+    <ClInclude Include="SmallObject.h">
+      <Filter>Файлы заголовков\object\ObjectClass</Filter>
+    </ClInclude>
+    <ClInclude Include="object\Instance.h">
+      <Filter>Файлы заголовков\object\ObjectClass</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderData.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectPriority.h">
+      <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -169,12 +193,6 @@
     </ClCompile>
     <ClCompile Include="BTEGeoConventor\BTEGeoConventor.cpp">
       <Filter>Исходные файлы\BTEGeoConventor</Filter>
-    </ClCompile>
-    <ClCompile Include="object\Object.cpp">
-      <Filter>Исходные файлы\object</Filter>
-    </ClCompile>
-    <ClCompile Include="object\Instance.cpp">
-      <Filter>Исходные файлы\object</Filter>
     </ClCompile>
     <ClCompile Include="data\BlockPalette.cpp">
       <Filter>Исходные файлы\core</Filter>
@@ -191,7 +209,7 @@
     <ClCompile Include="data\Data.cpp">
       <Filter>Исходные файлы\data</Filter>
     </ClCompile>
-    <ClCompile Include="data\DataIO.cpp">
+    <ClCompile Include="data\DataPersistence.cpp">
       <Filter>Исходные файлы\data</Filter>
     </ClCompile>
     <ClCompile Include="core\ui\GuiManager.cpp">
@@ -218,9 +236,6 @@
     <ClCompile Include="core\render\Viewer3D.cpp">
       <Filter>Исходные файлы\core\render</Filter>
     </ClCompile>
-    <ClCompile Include="WorldMap.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="core\render\Viewer2D.cpp">
       <Filter>Исходные файлы\core\render\2D</Filter>
     </ClCompile>
@@ -229,6 +244,27 @@
     </ClCompile>
     <ClCompile Include="Streamed2D.cpp">
       <Filter>Исходные файлы\core\render\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMap.cpp">
+      <Filter>Исходные файлы\object</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkData.cpp">
+      <Filter>Исходные файлы\data</Filter>
+    </ClCompile>
+    <ClCompile Include="BigObject.cpp">
+      <Filter>Исходные файлы\object\ObjectClass</Filter>
+    </ClCompile>
+    <ClCompile Include="object\Object.cpp">
+      <Filter>Исходные файлы\object\ObjectClass</Filter>
+    </ClCompile>
+    <ClCompile Include="SmallObject.cpp">
+      <Filter>Исходные файлы\object\ObjectClass</Filter>
+    </ClCompile>
+    <ClCompile Include="object\Instance.cpp">
+      <Filter>Исходные файлы\object\ObjectClass</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderData.cpp">
+      <Filter>Исходные файлы\data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

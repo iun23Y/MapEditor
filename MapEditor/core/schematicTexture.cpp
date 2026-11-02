@@ -204,7 +204,7 @@ void schematicTexture::updateCache(const sf::View& view) {
     removeOutdatedRegions(minRx, minRz, maxRx, maxRz);
 }
 
-schematicTexture::schematicTexture(SchematicMap* schematic, textureManager* textureManager)
+schematicTexture::schematicTexture(SchematicMap* schematic, TextureManager* textureManager)
     : schematic(schematic), textures(textureManager) {
 
     const unsigned int threadCount = std::max(1u, std::min(4u,

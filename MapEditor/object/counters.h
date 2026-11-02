@@ -19,7 +19,7 @@ private:
     std::vector<std::tuple<int, int, int>> placedBlocks;
     counterType type;
     SchematicMap* schem;
-    textureManager* texManager;
+    TextureManager* textureManager;
     bool completed = false;
     bool selected = false;
     int contourHeight = 1;
@@ -310,7 +310,6 @@ private:
 
         auto borderLocal = generateCirclePixels(cx, cz, radius);
 
-        // Область контура
         int xMin = cx - radius, xMax = cx + radius;
         int zMin = cz - radius, zMax = cz + radius;
 
@@ -399,8 +398,8 @@ private:
     }
 
 public:
-    Counter(SchematicMap* schem, textureManager* texManager, counterType type)
-        : schem(schem), texManager(texManager), type(type), selected(false), completed(false) {
+    Counter(SchematicMap* schem, TextureManager* textureManager, counterType type)
+        : schem(schem), textureManager(textureManager), type(type), selected(false), completed(false) {
     }
 
     void setSelected(bool sel) { selected = sel; }
