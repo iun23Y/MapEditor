@@ -69,6 +69,10 @@ private:
 			{ static_cast<float>(m_viewportSize.x) / windowSize.x,
 			static_cast<float>(m_viewportSize.y) / windowSize.y }
 		));
+		float vh = static_cast<float>(m_viewportSize.y);
+		float vw = vh * (static_cast<float>(m_viewportSize.x) / static_cast<float>(m_viewportSize.y));
+		m_view.setSize({ vw, vh });
+		m_view.setCenter({ vw * 0.5f, vh * 0.5f });
 	}
 	void updateSide() {
 		if (m_simple2D) {

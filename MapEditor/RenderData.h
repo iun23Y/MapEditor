@@ -24,7 +24,7 @@ public:
 			});
 
 		std::sort(layerZero.begin(), layerZero.end(), [](const Object* a, const Object* b) {
-			return a->priority() > b->priority();
+			return a->priority() < b->priority();
 			});
 
 		for (const Object* obj : layered) {

@@ -9,7 +9,7 @@
 class Object
 {
 public:
-    Object(ObjectID id, ObjectType type) : m_id(id), m_type(type) {}
+    Object(ObjectType type) : m_type(type) {}
     virtual ~Object() = default;
 
     ObjectID id() const { return m_id; }

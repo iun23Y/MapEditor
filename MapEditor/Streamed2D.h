@@ -87,7 +87,14 @@ public:
             if (!tile.hasTexture) continue;
             if (!rectIntersects(tile.rect, vpRect)) continue;
 
+            constexpr int TILE = TextureManager::TILE;
+            constexpr int P = 1;
+
             sf::Sprite sprite(tile.texture);
+            sprite.setTextureRect(sf::IntRect(
+                { P * TILE, P * TILE },
+                { (tile.rect.z) * TILE, (tile.rect.w) * TILE }));
+            sprite.setScale({ 1.f / TILE, 1.f / TILE });
             sprite.setPosition(sf::Vector2f(
                 static_cast<float>(tile.offset.x),
                 static_cast<float>(tile.offset.y)));
@@ -328,6 +335,9 @@ private:
     {
         if (topBlocks.empty() || !m_shaderLoaded || !textureManager) return {};
 
+        constexpr int TILE = TextureManager::TILE;
+        constexpr int P = 1;
+
         glm::ivec2 maxKey{ INT_MIN, INT_MIN };
         int minY = INT_MAX;
         for (const auto& [pos, block] : topBlocks) {
@@ -335,21 +345,17 @@ private:
             maxKey.y = std::max(maxKey.y, pos.y);
             minY = std::min(minY, block.pos.y);
         }
-
         const int W = maxKey.x - minKey.x + 1;
         const int H = maxKey.y - minKey.y + 1;
         if (W <= 0 || H <= 0) return {};
 
-        constexpr int P = 1;
         const int IW = W + 2 * P;
         const int IH = H + 2 * P;
 
         sf::Image idMap({ (unsigned)IW, (unsigned)IH }, sf::Color(0, 0, 0, 0));
-
         for (const auto& [pos, block] : topBlocks) {
             const uint16_t slot = textureManager->getAtlasSlot(block.id);
             if (slot == 0) continue;
-
             const uint16_t h16 = (uint16_t)std::clamp(block.pos.y - minY, 0, 65535);
             idMap.setPixel(
                 { (unsigned)(pos.x - minKey.x + P), (unsigned)(pos.y - minKey.y + P) },
@@ -360,10 +366,12 @@ private:
         sf::Texture idTex;
         idTex.setSmooth(false);
         idTex.setRepeated(false);
-        if (!idTex.loadFromImage(idMap))
-            return {};
+        if (!idTex.loadFromImage(idMap)) return {};
 
-        sf::RenderTexture rt({ (unsigned)W, (unsigned)H });
+        const int OW = IW * TILE;
+        const int OH = IH * TILE;
+
+        sf::RenderTexture rt({ (unsigned)OW, (unsigned)OH });
         rt.clear(sf::Color::Transparent);
 
         shader->setUniform("regionSize", sf::Glsl::Vec2((float)W, (float)H));
@@ -372,12 +380,12 @@ private:
             (float)TextureManager::ATLAS_W, (float)TextureManager::ATLAS_H));
         shader->setUniform("atlasGrid", sf::Glsl::Vec2(
             (float)TextureManager::COLS, (float)TextureManager::ROWS));
-        shader->setUniform("tileSize", (float)TextureManager::TILE);
+        shader->setUniform("tileSize", (float)TILE);
         shader->setUniform("atlas", textureManager->getAtlas());
         shader->setUniform("idMap", idTex);
 
         sf::Sprite sprite(idTex);
-        sprite.setTextureRect(sf::IntRect({ P, P }, { W, H }));
+        sprite.setScale({ (float)TILE, (float)TILE });
 
         sf::RenderStates st;
         st.shader = shader.get();
@@ -385,8 +393,7 @@ private:
         rt.draw(sprite, st);
         rt.display();
 
-        sf::Texture out = rt.getTexture();
-        return out;
+        return rt.getTexture();
     }
 
     const ChunkData* m_chunkData = nullptr;

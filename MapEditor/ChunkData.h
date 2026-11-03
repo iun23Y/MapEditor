@@ -62,6 +62,10 @@ public:
             it->second.set(worldBlocks);
         }
     }
+    void setBlocks(const std::vector<int>& data, glm::ivec3 minPos, glm::ivec3 maxPos) {
+        BlockData bd(data, maxPos.x - minPos.x, maxPos.y - minPos.y, maxPos.z - minPos.z);
+        setBlocks(bd);
+	}
     void setBlock(glm::ivec3 worldPos, uint16_t id) {
         Chunk& c = getOrCreateChunk(worldPos);
         c.set(worldPos, id);

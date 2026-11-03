@@ -7,7 +7,7 @@
 class SmallObject : public Object
 {
 public:
-	SmallObject(ObjectID id) : Object(id, ObjectType::SmallObject) {}
+	SmallObject() : Object(ObjectType::SmallObject) {}
 
 	void setData(BlockData&& data) { m_data = std::move(data); }
 	const BlockData& data() const { return m_data; }

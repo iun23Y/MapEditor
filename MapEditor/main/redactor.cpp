@@ -1,4 +1,6 @@
-﻿#include "redactor.h"
+﻿
+/*
+#include "redactor.h"
 #include "schematic.h"
 #include "GuiManager.h"
 #include "helper.h"
@@ -444,3 +446,4 @@ void Redactor::showLoadDialog() {
 void Redactor::setStatusText(const std::wstring& text) {
     statusMessage = text;
 }
+*/

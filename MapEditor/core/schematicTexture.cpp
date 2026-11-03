@@ -1,3 +1,4 @@
+/*
 #include "schematicTexture.h"
 #include "helper.h"
 
@@ -275,3 +276,4 @@ void schematicTexture::updateRegion(sf::Vector2i pos) {
     regionCache.erase({ rx, rz });
     enqueueRegion(rx, rz, rx, rz);
 }
+*/

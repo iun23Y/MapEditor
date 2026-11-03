@@ -25,13 +25,16 @@ public:
     void loadRegion(glm::ivec2 pos, Data& data) {
         auto ids = readRegionFile(pos);    // [7, 8, 10]
 
-        for (id : ids) {
+        for (auto id : ids) {
             if (data.get(id)) continue;       // ← уже загружен соседним регионом (или раньше)
             loadObject(id, data);             // .object или bigobjects/<id>/
         }
     }
 private:
     std::vector<int> readRegionFile(glm::ivec2 pos) {
+
+    }
+    void loadObject(int id, Data& data) {
 
     }
 };

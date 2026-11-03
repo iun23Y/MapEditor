@@ -126,41 +126,18 @@ void Menu::showLoadDialog() {
     if (GetOpenFileNameA(&ofn)) {
         std::string path(fileName);
         settings.lastSchematicPath = path;
-        startLoad(path);
-
-        while (window.isOpen() && isLoading) {
-            handleEvents();
-            window.clear(settings.backgroundColor);
-
-            sf::Text status(ui.getFont(), L"Loading schematic...", 24);
-            status.setFillColor(sf::Color::White);
-            status.setPosition({ 40.f, static_cast<float>(window.getSize().y) / 2.f - 20.f });
-            window.draw(status);
-            window.display();
-
-            processLoad();
-            sf::sleep(sf::milliseconds(16));
-        }
-
-        if (!loadedSchematic) {
-            if (!loadingMessage.empty())
-                std::cerr << "Failed to load schematic: " << loadingMessage << std::endl;
-            return;
-        }
 
         int currentWidth = window.getSize().x;
         int currentHeight = window.getSize().y;
         window.close();
 
         try {
-            Redactor redactor(std::move(loadedSchematic), currentWidth, currentHeight);
+            Redactor redactor(path);
             redactor.run();
         }
         catch (const std::exception& e) {
             std::cerr << "Editor display error: " << e.what() << std::endl;
         }
-
-        loadedSchematic.reset();
     }
 #else
     std::cout << "Enter path to schematic file: ";
@@ -223,30 +200,5 @@ void Menu::loadSettings() {
             }
         }
         file.close();
-    }
-}
-
-void Menu::startLoad(const std::string& path) {
-    isLoading = true;
-    loadingMessage.clear();
-    std::string exeDir = getExeDirectory();
-    loadFuture = std::async(std::launch::async, [path, exeDir]() {
-        return std::make_unique<SchematicMap>(path, exeDir + "world");
-    });
-}
-
-void Menu::processLoad() {
-    if (!isLoading) return;
-    if (loadFuture.valid()) {
-        auto status = loadFuture.wait_for(std::chrono::milliseconds(0));
-        if (status == std::future_status::ready) {
-            try {
-                loadedSchematic = loadFuture.get();
-            }
-            catch (const std::exception& e) {
-                loadingMessage = e.what();
-            }
-            isLoading = false;
-        }
     }
 }

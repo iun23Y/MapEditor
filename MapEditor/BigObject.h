@@ -7,9 +7,10 @@
 class BigObject : public Object
 {
 public:
-	BigObject(ObjectID id) : Object(id, ObjectType::BigObject) {}
+	BigObject() : Object(ObjectType::BigObject) {}
 
 	void setData(ChunkData&& data) { m_data = std::move(data); }
+	ChunkData& data() { return m_data; }
 	const ChunkData& data() const { return m_data; }
 
 	Bounds bounds() const override {

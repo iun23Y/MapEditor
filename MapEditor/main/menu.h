@@ -24,8 +24,6 @@ private:
     void loadSettings();
     void showLoadDialog();
     void showInfoDialog();
-    void startLoad(const std::string& path);
-    void processLoad();
 
     sf::RenderWindow window;
     GuiManager ui;
@@ -43,11 +41,9 @@ private:
     } settings;
 
     // Version constants
-    const std::wstring PROGRAM_VERSION = L"2.0.0";
+    const std::wstring PROGRAM_VERSION = L"3.0.0";
     const std::wstring MC_VERSION = L"1.12.2 - 1.21.4";
 
     bool isLoading = false;
-    std::future<std::unique_ptr<SchematicMap>> loadFuture;
-    std::unique_ptr<SchematicMap> loadedSchematic;
     std::string loadingMessage;
 };

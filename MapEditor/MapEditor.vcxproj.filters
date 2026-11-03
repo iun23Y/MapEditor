@@ -266,6 +266,9 @@
     <ClCompile Include="RenderData.cpp">
       <Filter>Исходные файлы\data</Filter>
     </ClCompile>
+    <ClCompile Include="Constants.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MapEditor.rc">

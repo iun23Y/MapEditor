@@ -184,6 +184,7 @@
   <ItemGroup>
     <ClCompile Include="BigObject.cpp" />
     <ClCompile Include="ChunkData.cpp" />
+    <ClCompile Include="Constants.cpp" />
     <ClCompile Include="data\BlockPalette.cpp" />
     <ClCompile Include="BTEGeoConventor\BTEGeoConventor.cpp" />
     <ClCompile Include="core\NBTManager.cpp" />
