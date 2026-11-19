@@ -8,4 +8,5 @@ enum class ObjectType : uint8_t
 {
 	SmallObject = 0,
 	BigObject = 1,
+	MultiObject = 2,
 };

@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include "schematic.h"
@@ -558,3 +559,4 @@ public:
     const std::vector<sf::Vector2f>& getPoints() const { return points; }
     counterType getType() const { return type; }
 };
+*/

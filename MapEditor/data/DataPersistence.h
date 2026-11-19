@@ -5,7 +5,7 @@
 
 //.Region хранит в себе только id объектов для загрузки
 
-//.object хранит в себе данные маленьких объектов
+//.object хранит в себе данные объектов / разные magic меняют тип объекта
 
 //.instance хранит в себе данные инстансов не только своего но и общих по id
 
@@ -16,23 +16,49 @@
 //ChunkPersistence - класс за загрузку и сохранение чанков : .oc - покоординатная загрузка чанков
 
 #pragma once
-
 #include "Data.h"
+#include "BigObject.h"
+#include "SmallObject.h"
+#include "MultiObject.h"
+#include "ChunkPersistence.h"
+#include "helper.h"
+#include "ObjectLayer.h"
+#include <filesystem>
+#include <vector>
+#include <optional>
+#include <unordered_map>
+#include <unordered_set>
+#include <functional>
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
 
-class DataPersistence
-{
-public:
-    void loadRegion(glm::ivec2 pos, Data& data) {
-        auto ids = readRegionFile(pos);    // [7, 8, 10]
+namespace fs = std::filesystem;
 
-        for (id : ids) {
-            if (data.get(id)) continue;       // ← уже загружен соседним регионом (или раньше)
-            loadObject(id, data);             // .object или bigobjects/<id>/
-        }
+namespace DataPersistence {
+    inline constexpr int REGION_SIZE = 512;
+
+    inline constexpr uint32_t MAGIC_SOBJ = 0x4A424F53;
+    inline constexpr uint32_t MAGIC_BOBJ = 0x4A424F42;
+    inline constexpr uint32_t MAGIC_MOBJ = 0x4A424F4D;
+    inline constexpr uint32_t MAGIC_REGN = 0x4E474552;
+    inline constexpr uint8_t  VERSION = 1;
+
+    bool save(const Data& data, const fs::path& root = getExeDirectory());
+    bool load(Data& data, const fs::path& root);
+    ObjectID nextObjectId(const fs::path& root);
+
+    bool saveObject(const Object& obj, const fs::path& root, const std::optional<Bounds>& oldBounds = std::nullopt);
+    bool moveObject(Object& obj, glm::ivec3 delta, const fs::path& root);
+    bool deleteObject(ObjectID id, const fs::path& root);
+
+    void loadRegion(glm::ivec2 region, Data& data, const fs::path& root);
+    void updateRegion(glm::ivec2 region, Data& data, const fs::path& root);
+    void unloadRegion(glm::ivec2 region, Data& data, const fs::path& root,
+        const std::unordered_set<glm::ivec2>& regionsToKeep);
+
+    inline glm::ivec2 regionOf(glm::ivec3 pos) {
+        return { (int)std::floor((float)pos.x / REGION_SIZE),
+                 (int)std::floor((float)pos.z / REGION_SIZE) };
     }
-private:
-    std::vector<int> readRegionFile(glm::ivec2 pos) {
-
-    }
-};
-
+}

@@ -7,10 +7,11 @@
 class SmallObject : public Object
 {
 public:
-	SmallObject(ObjectID id) : Object(id, ObjectType::SmallObject) {}
+	SmallObject() : Object(ObjectType::SmallObject) {}
 
 	void setData(BlockData&& data) { m_data = std::move(data); }
 	const BlockData& data() const { return m_data; }
+	BlockData& data() { return m_data; }
 
 	Bounds bounds() const override {
 		return Bounds{ position + m_data.minCorner(), position + m_data.maxCorner() };

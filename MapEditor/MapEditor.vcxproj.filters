@@ -73,6 +73,9 @@
     <Filter Include="Исходные файлы\object\ObjectClass">
       <UniqueIdentifier>{b116252a-8553-4b5a-abc1-3c14791cd3ad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы заголовков\data\Chunks">
+      <UniqueIdentifier>{9e56c4eb-71b4-4a43-ac52-ddf36c1e435c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource5.h">
@@ -92,9 +95,6 @@
     </ClInclude>
     <ClInclude Include="core\render\Camera.h">
       <Filter>Файлы заголовков\core\render</Filter>
-    </ClInclude>
-    <ClInclude Include="data\Chunk.h">
-      <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
     <ClInclude Include="object\counters.h">
       <Filter>Файлы заголовков\object</Filter>
@@ -162,9 +162,6 @@
     <ClInclude Include="Side.h">
       <Filter>Файлы заголовков\core\render\2D</Filter>
     </ClInclude>
-    <ClInclude Include="ChunkData.h">
-      <Filter>Файлы заголовков\data</Filter>
-    </ClInclude>
     <ClInclude Include="BigObject.h">
       <Filter>Файлы заголовков\object\ObjectClass</Filter>
     </ClInclude>
@@ -180,8 +177,17 @@
     <ClInclude Include="RenderData.h">
       <Filter>Файлы заголовков\data</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectPriority.h">
+    <ClInclude Include="ObjectLayer.h">
       <Filter>Файлы заголовков\data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\Chunk.h">
+      <Filter>Файлы заголовков\data\Chunks</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkData.h">
+      <Filter>Файлы заголовков\data\Chunks</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkPersistence.h">
+      <Filter>Файлы заголовков\data\Chunks</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -265,6 +271,12 @@
     </ClCompile>
     <ClCompile Include="RenderData.cpp">
       <Filter>Исходные файлы\data</Filter>
+    </ClCompile>
+    <ClCompile Include="Constants.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkPeristence.cpp">
+      <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

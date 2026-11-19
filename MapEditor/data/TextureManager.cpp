@@ -11,11 +11,56 @@
 
 using namespace nlohmann;
 
+namespace {
+
+    const sf::Color COLOR_BIOME_PLAINS{ 0xA0, 0xC0, 0x60, 0xFF };
+
+    bool endsWith(const std::string& s, const std::string& suffix) {
+        if (s.size() < suffix.size()) return false;
+        return s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
+
+    bool isBiomeTintedBlock(const std::string& n) {
+        if (n == "minecraft:grass_block" ||
+            n == "minecraft:short_grass" ||
+            n == "minecraft:tall_grass" ||
+            n == "minecraft:fern" ||
+            n == "minecraft:large_fern" ||
+            n == "minecraft:vine" ||
+            n == "minecraft:lily_pad" ||
+            n == "minecraft:sugar_cane" ||
+            n == "minecraft:pink_petals") {
+            return true;
+        }
+        if (endsWith(n, "_leaves")) {
+            if (n == "minecraft:cherry_leaves" ||
+                n == "minecraft:azalea_leaves" ||
+                n == "minecraft:flowering_azalea_leaves" ||
+                n == "minecraft:pale_oak_leaves") {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    sf::Color multiplyColor(sf::Color base, sf::Color tint) {
+        return sf::Color(
+            static_cast<uint8_t>((static_cast<uint16_t>(base.r) * tint.r) / 255),
+            static_cast<uint8_t>((static_cast<uint16_t>(base.g) * tint.g) / 255),
+            static_cast<uint8_t>((static_cast<uint16_t>(base.b) * tint.b) / 255),
+            base.a
+        );
+    }
+
+}
+
 TextureManager::TextureManager() {
     pathJson = getExeDirectory() + "Resources\\blocks.json";
     pathTextures = getExeDirectory() + "Resources\\Textures";
     loadData();
 }
+
 void TextureManager::buildAtlas(const BlockPalette& palette) {
     sf::Image atlas({ ATLAS_W, ATLAS_H }, sf::Color::Transparent);
 
@@ -39,6 +84,12 @@ void TextureManager::buildAtlas(const BlockPalette& palette) {
             idToSlot[id] = 0;
             continue;
         }
+
+        if (getBlockType(stripped) == "nosolid") {
+            idToSlot[id] = 1;
+            continue;
+        }
+
         if (next >= COLS * ROWS) break;
 
         auto it = images.find(stripped);
@@ -49,9 +100,22 @@ void TextureManager::buildAtlas(const BlockPalette& palette) {
 
         const unsigned col = next % COLS;
         const unsigned row = next / COLS;
+
         atlas.copy(it->second,
             { col * TILE, row * TILE },
             sf::IntRect({ 0, 0 }, { 16, 16 }), true);
+
+        if (isBiomeTintedBlock(stripped)) {
+            for (unsigned dy = 0; dy < 16; ++dy) {
+                for (unsigned dx = 0; dx < 16; ++dx) {
+                    const unsigned px = col * TILE + dx;
+                    const unsigned py = row * TILE + dy;
+                    sf::Color c = atlas.getPixel({ px, py });
+                    if (c.a == 0) continue;
+                    atlas.setPixel({ px, py }, multiplyColor(c, COLOR_BIOME_PLAINS));
+                }
+            }
+        }
 
         idToSlot[id] = next;
         ++next;
@@ -61,6 +125,7 @@ void TextureManager::buildAtlas(const BlockPalette& palette) {
     atlasTexture.setSmooth(false);
     atlasTexture.setRepeated(false);
 }
+
 BlockPalette TextureManager::buildPalette() const {
     BlockPalette palette;
     palette.addBlock(0, "minecraft:air");
@@ -76,6 +141,7 @@ BlockPalette TextureManager::buildPalette() const {
         palette.addBlock(name);
     return palette;
 }
+
 bool TextureManager::loadData() {
     std::ifstream file(pathJson);
     if (!file.is_open()) return false;
@@ -154,22 +220,26 @@ uint16_t TextureManager::getAtlasSlot(int blockId) const {
     if (blockId < 0 || blockId >= (int)idToSlot.size()) return 1;
     return idToSlot[blockId];
 }
+
 std::string TextureManager::getBlockType(const std::string& blockName) const {
     auto it = blockTypes.find(blockName);
     return it == blockTypes.end() ? "cube" : it->second;
 }
+
 const sf::Texture* TextureManager::getTexture(const std::string& blockName) const {
     auto it = textures.find(blockName);
     if (it == textures.end())
         return nullptr;
     return &it->second;
 }
+
 const sf::Image* TextureManager::getImage(const std::string& blockName) const {
     auto it = images.find(blockName);
     if (it == images.end())
         return nullptr;
     return &it->second;
 }
+
 sf::Color TextureManager::getColor(const std::string& blockName) const {
     auto it = colors.find(blockName);
     if (it == colors.end())

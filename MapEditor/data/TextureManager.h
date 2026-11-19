@@ -5,19 +5,6 @@
 #include "BlockPalette.h"
 
 class TextureManager {
-private:
-    std::unordered_map<std::string, sf::Texture> textures;
-    std::unordered_map<std::string, sf::Image> images;
-    std::unordered_map<std::string, sf::Color> colors;
-    std::unordered_map<std::string, std::string> blockTypes;
-
-    sf::Texture atlasTexture;
-    std::vector<uint16_t> idToSlot;
-
-    std::string pathJson;
-    std::string pathTextures;
-
-    bool loadData();
 public:
     TextureManager();
     void buildAtlas(const BlockPalette& palette);
@@ -36,4 +23,17 @@ public:
     const sf::Texture* getTexture(const std::string& blockName) const;
     const sf::Image* getImage(const std::string& blockName) const;
     sf::Color getColor(const std::string& blockName) const;
+private:
+    std::unordered_map<std::string, sf::Texture> textures;
+    std::unordered_map<std::string, sf::Image> images;
+    std::unordered_map<std::string, sf::Color> colors;
+    std::unordered_map<std::string, std::string> blockTypes;
+
+    sf::Texture atlasTexture;
+    std::vector<uint16_t> idToSlot;
+
+    std::string pathJson;
+    std::string pathTextures;
+
+    bool loadData();
 };
