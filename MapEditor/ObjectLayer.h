@@ -1,6 +1,6 @@
 #pragma once
 
-enum class ObjectPriority {
+enum class ObjectLayer {
 	Highest = 0,
 	High  = 1,
 	Medium = 2,

@@ -41,7 +41,7 @@ private:
     } settings;
 
     // Version constants
-    const std::wstring PROGRAM_VERSION = L"3.0.0";
+    const std::wstring PROGRAM_VERSION = L"2.0.1";
     const std::wstring MC_VERSION = L"1.12.2 - 1.21.4";
 
     bool isLoading = false;

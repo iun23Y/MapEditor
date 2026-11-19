@@ -3,7 +3,7 @@
 #include "data/Bounds.h"
 #include <string>
 #include <glm/glm.hpp>
-#include "ObjectPriority.h"
+#include "ObjectLayer.h"
 
 //Abstract
 class Object
@@ -13,16 +13,16 @@ public:
     virtual ~Object() = default;
 
     ObjectID id() const { return m_id; }
-    int layer() const { return m_layer; }
-    ObjectPriority priority() const { return m_priority; }
+    ObjectLayer layer() const { return m_layer; }
+    int priority() const { return m_priority; }
 
     glm::ivec3 position{ 0 };
 
     virtual Bounds bounds() const = 0;
 
     void setId(ObjectID id) { m_id = id; }
-    void setLayer(int l) { m_layer = l; }
-    void setPriority(ObjectPriority p) { m_priority = p; }
+    void setLayer(ObjectLayer l) { m_layer = l; }
+    void setPriority(int p) { m_priority = p; }
     void setName(const std::string& n) { m_name = n; }
     const std::string& name() const { return m_name; }
 
@@ -30,8 +30,8 @@ public:
 	void setType(ObjectType type) { m_type = type; }
 protected:
     ObjectID m_id = NO_OBJECT;
-    int m_layer = 0;
-    ObjectPriority m_priority = ObjectPriority::Medium;
+    ObjectLayer m_layer = ObjectLayer::Medium;
+    int m_priority = 0;
     std::string m_name;
 
     ObjectType m_type;

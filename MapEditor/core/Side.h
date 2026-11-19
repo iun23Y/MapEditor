@@ -7,9 +7,9 @@ static glm::ivec2 projectKey(Side side, glm::ivec3 p) {
     case Side::Top:
     case Side::Bottom: return { p.x, p.z };
     case Side::Front:
-    case Side::Back:   return { p.x, p.y };
+    case Side::Back:   return { p.x, -p.y };
     case Side::Left:
-    case Side::Right:  return { p.z, p.y };
+    case Side::Right:  return { p.z, -p.y };
     }
     return { p.x, p.z };
 }
@@ -23,4 +23,16 @@ static bool isCloser(Side side, glm::ivec3 a, glm::ivec3 b) {
     case Side::Left:   return a.x < b.x;
     }
     return false;
+}
+
+static int shadingHeight(Side side, glm::ivec3 p) {
+    switch (side) {
+    case Side::Top:    return  p.y;
+    case Side::Bottom: return  p.y;
+    case Side::Front:  return -p.z;
+    case Side::Back:   return  p.z;
+    case Side::Left:   return -p.x;
+    case Side::Right:  return  p.x;
+    }
+    return p.y;
 }

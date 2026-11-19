@@ -28,21 +28,28 @@ public:
         const glm::ivec3 maxPos = minPos + glm::ivec3(Chunk::SIZE);
         m_chunks.emplace(cc, Chunk(minPos, maxPos));
         updateBoundsCached(minPos, maxPos);
+        ++m_revision;
     }
     Chunk& addChunk(Chunk&& chunk) {
         const glm::ivec3 cc = toChunkCoord(chunk.getMinPos());
         auto [it, inserted] = m_chunks.insert_or_assign(cc, std::move(chunk));
         updateBoundsCached(it->second.getMinPos(), it->second.getMaxPos());
+        ++m_revision;
         return it->second;
+    }
+    void removeChunk(glm::ivec3 pos) {
+        glm::ivec3 cc = toChunkCoord(pos);
+        if (m_chunks.erase(cc) != 0)
+            ++m_revision;
     }
 
     void setBlocks(const BlockData& data) {
-        std::unordered_map<glm::ivec3, std::unordered_map<glm::ivec3, int>> byChunk;
+        std::unordered_map<glm::ivec3, std::vector<std::pair<glm::ivec3, int>>> byChunk;
         for (const auto& [pos, id] : data.raw()) {
             if (id < 0) continue;
             const glm::ivec3 cc = toChunkCoord(pos);
             const glm::ivec3 chunkMin = cc * Chunk::SIZE;
-            byChunk[cc][pos - chunkMin] = id;
+            byChunk[cc].emplace_back(pos - chunkMin, id);
         }
 
         for (auto& [cc, blocks] : byChunk) {
@@ -53,22 +60,49 @@ public:
                 it = m_chunks.emplace(cc, Chunk(minPos, maxPos)).first;
                 updateBoundsCached(minPos, maxPos);
             }
-
-            std::unordered_map<glm::ivec3, int> worldBlocks;
-            worldBlocks.reserve(blocks.size());
-            const glm::ivec3 chunkMin = it->second.getMinPos();
-            for (const auto& [localPos, id] : blocks)
-                worldBlocks.emplace(chunkMin + localPos, id);
-            it->second.set(worldBlocks);
+            it->second.setLocalBlocks(blocks);
         }
+        if (!byChunk.empty()) ++m_revision;
     }
     void setBlocks(const std::vector<int>& data, glm::ivec3 minPos, glm::ivec3 maxPos) {
-        BlockData bd(data, maxPos.x - minPos.x, maxPos.y - minPos.y, maxPos.z - minPos.z);
-        setBlocks(bd);
+        const int width = maxPos.x - minPos.x;
+        const int height = maxPos.y - minPos.y;
+        const int depth = maxPos.z - minPos.z;
+        if (width <= 0 || height <= 0 || depth <= 0) return;
+
+        std::unordered_map<glm::ivec3, std::vector<std::pair<glm::ivec3, int>>> byChunk;
+        for (int y = 0; y < height; ++y) {
+            for (int z = 0; z < depth; ++z) {
+                for (int x = 0; x < width; ++x) {
+                    const size_t index = static_cast<size_t>(x) +
+                        static_cast<size_t>(z) * width +
+                        static_cast<size_t>(y) * width * depth;
+                    if (index >= data.size() || data[index] <= 0) continue;
+
+                    const glm::ivec3 worldPos = minPos + glm::ivec3(x, y, z);
+                    const glm::ivec3 cc = toChunkCoord(worldPos);
+                    byChunk[cc].emplace_back(worldPos - cc * Chunk::SIZE, data[index]);
+                }
+            }
+        }
+
+        for (auto& [cc, blocks] : byChunk) {
+            auto it = m_chunks.find(cc);
+            if (it == m_chunks.end()) {
+                const glm::ivec3 chunkMin = cc * Chunk::SIZE;
+                const glm::ivec3 chunkMax = chunkMin + glm::ivec3(Chunk::SIZE);
+                it = m_chunks.emplace(cc, Chunk(chunkMin, chunkMax)).first;
+                updateBoundsCached(chunkMin, chunkMax);
+            }
+            it->second.setLocalBlocks(blocks);
+        }
+        if (!byChunk.empty()) ++m_revision;
 	}
     void setBlock(glm::ivec3 worldPos, uint16_t id) {
         Chunk& c = getOrCreateChunk(worldPos);
+        if (c.get(worldPos) == id) return;
         c.set(worldPos, id);
+        ++m_revision;
     }
 
     BlockData getRegion(glm::ivec3 from, glm::ivec3 to) const {
@@ -198,15 +232,18 @@ public:
     bool empty() const noexcept { return m_chunks.empty(); }
 
     void clear() {
+        if (m_chunks.empty()) return;
         m_chunks.clear();
         m_minPos = glm::ivec3(0);
         m_maxPos = glm::ivec3(0);
         m_hasBounds = false;
+        ++m_revision;
     }
 
     glm::ivec3 minPos() const noexcept { return m_minPos; }
     glm::ivec3 maxPos() const noexcept { return m_maxPos; }
     bool hasBounds() const noexcept { return m_hasBounds; }
+    std::uint64_t revision() const noexcept { return m_revision; }
 private:
     Chunk& getOrCreateChunk(glm::ivec3 pos) {
         const glm::ivec3 cc = toChunkCoord(pos);
@@ -243,6 +280,7 @@ private:
     }
 
     std::unordered_map<glm::ivec3, Chunk> m_chunks;
+    std::uint64_t m_revision = 0;
     glm::ivec3 m_minPos{ 0 };
     glm::ivec3 m_maxPos{ 0 };
     bool m_hasBounds = false;

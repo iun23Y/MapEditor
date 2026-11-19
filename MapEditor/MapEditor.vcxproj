@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -144,9 +144,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BigObject.h" />
-    <ClInclude Include="ChunkData.h" />
-    <ClInclude Include="Constants.h" />
+    <ClInclude Include="object\BigObject.h" />
+    <ClInclude Include="data\ChunkData.h" />
+    <ClInclude Include="data\ChunkPersistence.h" />
+    <ClInclude Include="data\Constants.h" />
     <ClInclude Include="data\BlockPalette.h" />
     <ClInclude Include="BTEGeoConventor\BTEGeoConventor.h" />
     <ClInclude Include="data\Bounds.h" />
@@ -165,7 +166,7 @@
     <ClInclude Include="data\DataPersistence.h" />
     <ClInclude Include="core\tileLoader.h" />
     <ClInclude Include="core\tileMap.h" />
-    <ClInclude Include="ObjectPriority.h" />
+    <ClInclude Include="ObjectLayer.h" />
     <ClInclude Include="object\Instance.h" />
     <ClInclude Include="object\Object.h" />
     <ClInclude Include="data\ObjectMeta.h" />
@@ -173,18 +174,19 @@
     <ClInclude Include="core\ui\GuiManager.h" />
     <ClInclude Include="main\menu.h" />
     <ClInclude Include="main\redactor.h" />
-    <ClInclude Include="RenderData.h" />
+    <ClInclude Include="data\RenderData.h" />
     <ClInclude Include="resource5.h" />
-    <ClInclude Include="Side.h" />
-    <ClInclude Include="Simple2D.h" />
-    <ClInclude Include="SmallObject.h" />
-    <ClInclude Include="Streamed2D.h" />
-    <ClInclude Include="WorldMap.h" />
+    <ClInclude Include="core\Side.h" />
+    <ClInclude Include="core\render\Simple2D.h" />
+    <ClInclude Include="object\SmallObject.h" />
+    <ClInclude Include="core\render\Streamed2D.h" />
+
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BigObject.cpp" />
-    <ClCompile Include="ChunkData.cpp" />
-    <ClCompile Include="Constants.cpp" />
+    <ClCompile Include="object\BigObject.cpp" />
+    <ClCompile Include="data\ChunkData.cpp" />
+    <ClCompile Include="data\ChunkPeristence.cpp" />
+    <ClCompile Include="data\Constants.cpp" />
     <ClCompile Include="data\BlockPalette.cpp" />
     <ClCompile Include="BTEGeoConventor\BTEGeoConventor.cpp" />
     <ClCompile Include="core\NBTManager.cpp" />
@@ -199,17 +201,18 @@
     <ClCompile Include="data\Data.cpp" />
     <ClCompile Include="data\DataPersistence.cpp" />
     <ClCompile Include="object\Instance.cpp" />
+    <ClCompile Include="object\MultiObject.cpp" />
     <ClCompile Include="object\Object.cpp" />
     <ClCompile Include="object\counters.cpp" />
     <ClCompile Include="core\ui\GuiManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main\menu.cpp" />
     <ClCompile Include="main\redactor.cpp" />
-    <ClCompile Include="RenderData.cpp" />
-    <ClCompile Include="Simple2D.cpp" />
-    <ClCompile Include="SmallObject.cpp" />
-    <ClCompile Include="Streamed2D.cpp" />
-    <ClCompile Include="WorldMap.cpp" />
+    <ClCompile Include="data\RenderData.cpp" />
+    <ClCompile Include="core\render\Simple2D.cpp" />
+    <ClCompile Include="object\SmallObject.cpp" />
+    <ClCompile Include="core\render\Streamed2D.cpp" />
+
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MapEditor.rc" />

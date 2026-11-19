@@ -3,9 +3,11 @@
 #include <glm/glm.hpp>
 
 #include "TextureManager.h"
+#include "BlockPalette.h"
 
 extern glm::ivec2 windowSize;
 extern TextureManager* textureManager;
+extern BlockPalette* palette;
 extern glm::ivec3 offset;
 
 inline glm::ivec3 worldToLocal(glm::ivec3 pos) noexcept { return pos - offset; }

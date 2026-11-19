@@ -15,7 +15,7 @@
 
 class Chunk {
 public:
-    static constexpr int SIZE = 100;
+    static constexpr int SIZE = 64;
     static constexpr size_t VOLUME = static_cast<size_t>(SIZE) * SIZE * SIZE;
     static constexpr size_t LAYER = static_cast<size_t>(SIZE) * SIZE;
     static constexpr uint16_t AIR = 0;
@@ -67,6 +67,40 @@ public:
         }
         const glm::ivec3 l = worldPos - m_minPos;
         return m_data[index(l.x, l.y, l.z)];
+    }
+
+    inline void setLocalBlocks(const std::vector<std::pair<glm::ivec3, int>>& localBlocks) {
+        bool anyDirty = false;
+        int newMaxY = m_maxY;
+        bool removedTop = false;
+
+        for (const auto& [l, rawId] : localBlocks) {
+            if (l.x < 0 || l.x >= SIZE || l.y < 0 || l.y >= SIZE ||
+                l.z < 0 || l.z >= SIZE) continue;
+
+            const uint16_t id = (rawId < 0 || rawId > 65535)
+                ? AIR
+                : static_cast<uint16_t>(rawId);
+            auto& block = m_data[index(l.x, l.y, l.z)];
+            if (block == id) continue;
+
+            if (block == AIR && id != AIR) {
+                if (l.y > newMaxY) newMaxY = l.y;
+            }
+            else if (block != AIR && id == AIR) {
+                if (l.y == m_maxY) removedTop = true;
+            }
+            block = id;
+            anyDirty = true;
+        }
+
+        if (newMaxY > m_maxY) {
+            m_maxY = newMaxY;
+        }
+        else if (removedTop) {
+            maxYTight_ = false;
+        }
+        if (anyDirty) m_dirty = true;
     }
 
     inline void set(glm::ivec3 worldPos, uint16_t id) {

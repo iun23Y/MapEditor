@@ -133,18 +133,18 @@ bool Schematic::loadForSchematic(const std::string& filename,
             if (tag->type != TagType::TAG_INT) continue;
             if (name == "minecraft:__reserved__" || name == "__reserved__") continue;
 
-            const int schematicId = std::dynamic_pointer_cast<TagInt>(tag)->value;
-            int worldId;
-            if (palette.hasBlock(name))
-                worldId = palette.getId(name);
-            else
-                worldId = palette.addBlock(name);
+            std::string baseName = name;
+            auto bracket = baseName.find('[');
+            if (bracket != std::string::npos)
+                baseName.resize(bracket);
 
-            idRemap[schematicId] = worldId;
+            const int schematicId = std::dynamic_pointer_cast<TagInt>(tag)->value;
+            if (!palette.hasBlock(baseName)) continue;
+
+            idRemap[schematicId] = palette.getId(baseName);
         }
     }
 
-    // ---------- offset ----------
     int offsetX = 0, offsetY = 0, offsetZ = 0;
     auto offsetIt = schem->children.find("Offset");
     if (offsetIt != schem->children.end() && offsetIt->second->type == TagType::TAG_INT_ARRAY) {
